@@ -35,8 +35,8 @@ class FoodDataImportService {
 
       print('📥 Начало импорта USDA данных: $total записей');
 
-      final foodsBox = Hive.box(HiveService.foodsBox) as Box<FoodItem>;
-      final barcodesBox = Hive.box(HiveService.barcodesBox) as Box<String>;
+      final foodsBox = Hive.box<FoodItem>(HiveService.foodsBox);
+      final barcodesBox = Hive.box<String>(HiveService.barcodesBox);
 
       int imported = 0;
       int skipped = 0;
@@ -111,8 +111,8 @@ class FoodDataImportService {
       print('✅ JSON распарсен, записей: ${jsonData.length}');
       print('📥 Начало импорта USDA JSON данных: ${jsonData.length} записей');
 
-      final foodsBox = Hive.box(HiveService.foodsBox) as Box<FoodItem>;
-      final barcodesBox = Hive.box(HiveService.barcodesBox) as Box<String>;
+      final foodsBox = Hive.box<FoodItem>(HiveService.foodsBox);
+      final barcodesBox = Hive.box<String>(HiveService.barcodesBox);
 
       int imported = 0;
       int skipped = 0;
@@ -149,6 +149,124 @@ class FoodDataImportService {
     } catch (e) {
       print('❌ Ошибка импорта USDA JSON данных: $e');
       rethrow;
+    }
+  }
+
+  /// Импорт продуктов из локального JSON (основной источник).
+  ///
+  /// Формат каждого объекта:
+  /// ```json
+  /// {
+  ///   "id": 1,
+  ///   "name": "Картофель отварной",
+  ///   "serving_size": 100,
+  ///   "calories": 82,
+  ///   "protein": 2.0,
+  ///   "fat": 0.4,
+  ///   "carbs": 16.7
+  /// }
+  /// ```
+  /// Значения в файле заданы на порцию serving_size грамм; при импорте приводятся к расчёту на 100 г.
+  /// Опционально: "barcode" — для поиска по штрих-коду.
+  Future<void> importLocalFoodsJson(String jsonFilePath, {
+    Function(int current, int total)? onProgress,
+    bool fromAssets = false,
+  }) async {
+    try {
+      String jsonString;
+
+      if (fromAssets) {
+        print('📂 Загрузка продуктов из assets: $jsonFilePath');
+        try {
+          jsonString = await rootBundle.loadString(jsonFilePath);
+        } catch (e) {
+          print('❌ Ошибка загрузки файла из assets: $e');
+          rethrow;
+        }
+      } else {
+        final file = File(jsonFilePath);
+        if (!await file.exists()) {
+          throw FileSystemException('File not found: $jsonFilePath');
+        }
+        jsonString = await file.readAsString();
+      }
+
+      final jsonData = json.decode(jsonString) as List<dynamic>;
+      print('📥 Импорт локальных продуктов: ${jsonData.length} записей');
+
+      final foodsBox = Hive.box<FoodItem>(HiveService.foodsBox);
+      final barcodesBox = Hive.box<String>(HiveService.barcodesBox);
+
+      int imported = 0;
+      int skipped = 0;
+
+      for (int i = 0; i < jsonData.length; i++) {
+        try {
+          final raw = jsonData[i] as Map<String, dynamic>;
+          final food = _createFoodItemFromLocalJson(raw);
+          if (food != null) {
+            await foodsBox.put(food.id, food);
+            if (food.barcode != null && food.barcode!.isNotEmpty) {
+              await barcodesBox.put(food.barcode!, food.id);
+            }
+            imported++;
+          } else {
+            skipped++;
+          }
+          if (onProgress != null && (i + 1) % 50 == 0) {
+            onProgress(i + 1, jsonData.length);
+          }
+        } catch (e) {
+          print('⚠️ Ошибка при обработке записи ${i + 1}: $e');
+          skipped++;
+        }
+      }
+
+      print('✅ Локальный импорт: $imported импортировано, $skipped пропущено');
+    } catch (e) {
+      print('❌ Ошибка импорта локального JSON: $e');
+      rethrow;
+    }
+  }
+
+  /// Создание FoodItem из объекта локального JSON.
+  /// Значения в JSON — на serving_size г; пересчитываем на 100 г.
+  FoodItem? _createFoodItemFromLocalJson(Map<String, dynamic> raw) {
+    try {
+      final id = raw['id'];
+      if (id == null) return null;
+      // Поддержка "name" и "Name" (разный регистр в JSON)
+      final name = (raw['name'] ?? raw['Name'])?.toString().trim();
+      if (name == null || name.isEmpty) return null;
+
+      final servingSize = (raw['serving_size'] is num)
+          ? (raw['serving_size'] as num).toDouble()
+          : 100.0;
+      final factor = servingSize > 0 ? (100.0 / servingSize) : 1.0;
+
+      final calories = ((raw['calories'] as num?)?.toDouble() ?? 0) * factor;
+      final protein = ((raw['protein'] as num?)?.toDouble() ?? 0) * factor;
+      final fat = ((raw['fat'] as num?)?.toDouble() ?? 0) * factor;
+      final carbs = ((raw['carbs'] as num?)?.toDouble() ?? 0) * factor;
+
+      final barcode = raw['barcode']?.toString().trim();
+      final idStr = id.toString();
+
+      return FoodItem(
+        id: 'local_$idStr',
+        name: name,
+        nameRu: name,
+        calories: calories,
+        protein: protein,
+        fat: fat,
+        carbs: carbs,
+        category: FoodCategory.other,
+        barcode: (barcode != null && barcode.isNotEmpty) ? barcode : null,
+        source: 'local',
+      );
+    } catch (e) {
+      print('⚠️ Ошибка создания FoodItem из локального JSON: $e');
+      return null;
     }
   }
 
@@ -223,7 +341,7 @@ class FoodDataImportService {
     try {
       print('🔍 Создание индекса поиска...');
       
-      final foodsBox = Hive.box(HiveService.foodsBox) as Box<FoodItem>;
+      final foodsBox = Hive.box<FoodItem>(HiveService.foodsBox);
       
       // Открыть коробку индекса, если она еще не открыта
       Box<List<String>> indexBox;

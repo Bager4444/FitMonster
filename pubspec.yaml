@@ -31,7 +31,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # Google Sign-In
-  google_sign_in: ^6.2.1
+  google_sign_in: ^7.2.0
   
   # Apple Sign-In (только для iOS)
   # sign_in_with_apple: ^5.0.0
@@ -49,28 +49,28 @@ dependencies:
   provider: ^6.1.1
   
   # UI
-  fl_chart: ^0.66.0
+  fl_chart: ^1.1.1
   intl: ^0.20.2
   
   # Camera
-  camera: ^0.10.5+5
-  mobile_scanner: ^5.2.3
+  camera: ^0.11.3
+  mobile_scanner: ^7.1.4
   
   # Calendar
   table_calendar: ^3.1.2
   
   # Video
   video_player: ^2.8.1
-  file_picker: ^8.0.0+1
+  file_picker: ^10.3.10
   image_picker: ^1.0.4
-  permission_handler: ^11.0.1
+  permission_handler: ^12.0.1
   
   # ML Kit для отслеживания позы
-  google_mlkit_pose_detection: ^0.12.0
+  google_mlkit_pose_detection: ^0.14.0
   
   # Network & Connectivity
   dio: ^5.4.0
-  connectivity_plus: ^6.0.3
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:

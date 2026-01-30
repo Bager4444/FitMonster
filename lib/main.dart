@@ -10,7 +10,6 @@ import 'package:fitmonster/core/services/connectivity_service.dart';
 import 'package:fitmonster/features/diet/data/services/database_init_service.dart';
 import 'package:fitmonster/features/diet/data/services/food_database_service.dart';
 import 'package:fitmonster/features/diet/data/datasources/local_food_datasource.dart';
-import 'package:fitmonster/features/diet/data/datasources/remote_food_datasource.dart';
 import 'package:fitmonster/features/diet/data/repositories/food_repository.dart';
 import 'package:fitmonster/features/home/presentation/pages/home_page.dart';
 
@@ -22,8 +21,11 @@ void main() async {
   await Hive.initFlutter();
   await HiveService.initialize();
   
-  // Инициализация базы данных (импорт базовых продуктов/рецептов при первом запуске)
+  // Миграция: очистить старые продукты и перейти на загрузку из JSON (один раз)
   final initService = DatabaseInitService();
+  await initService.migrateToLocalFoodsIfNeeded();
+
+  // Инициализация базы данных (импорт продуктов из foods.json и рецептов при первом запуске)
   if (!await initService.isInitialized()) {
     print('🔄 Начинаю инициализацию базы данных...');
     // Запускаем инициализацию и ждем завершения
@@ -69,17 +71,10 @@ class FitMonsterApp extends StatelessWidget {
         // Сервис подключения к сети
         ChangeNotifierProvider(create: (_) => ConnectivityService()),
         
-        // Datasources (простые объекты без ChangeNotifier)
+        // Локальный источник продуктов (JSON → Hive)
         Provider(create: (_) => LocalFoodDatasource()),
-        Provider(create: (_) => RemoteFoodDatasource()),
-        
-        // Repository (зависит от datasources и connectivity)
-        ProxyProvider3<LocalFoodDatasource, RemoteFoodDatasource, ConnectivityService, FoodRepository>(
-          update: (_, local, remote, connectivity, __) => FoodRepository(
-            local: local,
-            remote: remote,
-            connectivity: connectivity,
-          ),
+        ProxyProvider<LocalFoodDatasource, FoodRepository>(
+          update: (_, local, __) => FoodRepository(local: local),
         ),
       ],
       child: Consumer<ThemeProvider>(

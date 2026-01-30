@@ -1,5 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
+import 'package:fitmonster/features/diet/domain/models/food_item.dart';
 import 'package:fitmonster/features/diet/data/services/food_data_import_service.dart';
 import 'package:fitmonster/features/diet/data/services/food_database_service.dart';
 
@@ -10,6 +11,33 @@ class DatabaseInitService {
   DatabaseInitService._internal();
 
   static const String _initKey = 'database_initialized';
+  /// Версия источника продуктов: 1 = старая (USDA/API), 2 = локальный JSON
+  static const String _foodsVersionKey = 'foods_data_version';
+  static const int _localJsonVersion = 2;
+
+  /// Очистить базу продуктов и сбросить инициализацию, чтобы загрузить данные из JSON.
+  /// Вызывается при миграции со старой схемы на локальный foods.json.
+  Future<void> clearFoodsAndResetForJson() async {
+    final settingsBox = Hive.box(HiveService.settingsBox);
+    final foodsBox = Hive.box<FoodItem>(HiveService.foodsBox);
+    final barcodesBox = Hive.box<String>(HiveService.barcodesBox);
+    await foodsBox.clear();
+    await barcodesBox.clear();
+    await settingsBox.put(_initKey, false);
+    await settingsBox.put(_foodsVersionKey, _localJsonVersion);
+    print('🗑️ База продуктов очищена, инициализация сброшена для загрузки из JSON');
+  }
+
+  /// Миграция: если база была инициализирована по старой схеме — очистить продукты и сбросить init.
+  /// После этого при запуске выполнится загрузка из assets/data/foods.json.
+  Future<void> migrateToLocalFoodsIfNeeded() async {
+    final settingsBox = Hive.box(HiveService.settingsBox);
+    final version = settingsBox.get(_foodsVersionKey, defaultValue: 0) as int;
+    //if (version >= _localJsonVersion) return;
+
+    print('🔄 Миграция на локальный JSON: очистка старых продуктов...');
+    await clearFoodsAndResetForJson();
+  }
 
   /// Проверить, была ли база данных инициализирована
   Future<bool> isInitialized() async {
@@ -35,11 +63,11 @@ class DatabaseInitService {
 
       final importService = FoodDataImportService();
 
-      // Импорт Foundation Foods из assets (если есть)
+      // Импорт продуктов из локального JSON (основной источник)
       try {
-        onProgress?.call('Импорт базовых продуктов...');
-        await importService.importUSDAJson(
-          'assets/data/usda/FoodData_Central_foundation_food_json_2025-12-18.json',
+        onProgress?.call('Импорт продуктов из локального файла...');
+        await importService.importLocalFoodsJson(
+          'assets/data/foods.json',
           fromAssets: true,
           onProgress: (current, total) {
             onProgress?.call('Импорт продуктов: $current / $total');
@@ -47,38 +75,13 @@ class DatabaseInitService {
         );
         onProgress?.call('✅ Продукты импортированы');
       } catch (e) {
-        // Файл может отсутствовать - это нормально для базовой версии
-        onError?.call('Предупреждение: не удалось импортировать продукты из assets: $e');
+        onError?.call('Не удалось загрузить продукты из assets/data/foods.json: $e');
       }
 
-      // Импорт базовых рецептов (если есть)
-      try {
-        onProgress?.call('Импорт базовых рецептов...');
-        await importService.importRecipes(
-          'assets/data/recipes/basic_recipes.json',
-          fromAssets: true,
-          onProgress: (current, total) {
-            onProgress?.call('Импорт рецептов: $current / $total');
-          },
-        );
-        onProgress?.call('✅ Рецепты импортированы');
-      } catch (e) {
-        // Файл может отсутствовать - это нормально
-        onError?.call('Предупреждение: не удалось импортировать рецепты: $e');
-      }
-
-      // Построение поискового индекса
-      try {
-        onProgress?.call('Построение поискового индекса...');
-        await importService.buildSearchIndex();
-        onProgress?.call('✅ Индекс построен');
-      } catch (e) {
-        onError?.call('Предупреждение: не удалось построить индекс: $e');
-      }
-
-      // Пометить как инициализированную
+      // Пометить как инициализированную и версию источника продуктов
       final settingsBox = Hive.box(HiveService.settingsBox);
       await settingsBox.put(_initKey, true);
+      await settingsBox.put(_foodsVersionKey, _localJsonVersion);
 
       onProgress?.call('✅ База данных успешно инициализирована');
     } catch (e) {

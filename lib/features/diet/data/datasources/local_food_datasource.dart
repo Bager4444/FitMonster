@@ -23,29 +23,33 @@ class LocalFoodDatasource {
     }
   }
 
-  /// Поиск продуктов по названию
+  /// Поиск продуктов по названию (без учёта регистра).
+  /// Запрос разбивается на слова; продукт подходит, если в названии есть все слова.
+  /// Частичное совпадение слов поддерживается (например, «картоф» находит «Картофель»).
   Future<List<FoodItem>> search({
     required String query,
     int maxResults = 30,
     FoodCategory? category,
   }) async {
-    final queryLower = query.toLowerCase().trim();
+    final queryLower = query.trim().toLowerCase();
     if (queryLower.isEmpty) return getPopular(maxResults: maxResults);
 
-    final results = <FoodItem>[];
-    final queryWords = queryLower.split(RegExp(r'\s+'));
+    // Убираем пустые слова (двойные пробелы и т.п.)
+    final queryWords = queryLower
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+    if (queryWords.isEmpty) return getPopular(maxResults: maxResults);
 
+    final results = <FoodItem>[];
     for (final food in _foodsBox.values) {
-      // Фильтр по категории
       if (category != null && food.category != category) continue;
 
-      // Поиск по всем словам запроса
       final nameLower = food.name.toLowerCase();
       final nameRuLower = food.nameRu.toLowerCase();
-      
+
       final matchesAll = queryWords.every((word) =>
-        nameLower.contains(word) || nameRuLower.contains(word)
-      );
+          nameLower.contains(word) || nameRuLower.contains(word));
 
       if (matchesAll) {
         results.add(food);
@@ -53,11 +57,15 @@ class LocalFoodDatasource {
       }
     }
 
-    // Сортировка: точные совпадения выше
+    // Сортировка: точное совпадение выше, затем по началу названия
     results.sort((a, b) {
-      final aExact = a.nameRu.toLowerCase() == queryLower ? 0 : 1;
-      final bExact = b.nameRu.toLowerCase() == queryLower ? 0 : 1;
-      return aExact.compareTo(bExact);
+      final aRu = a.nameRu.toLowerCase();
+      final bRu = b.nameRu.toLowerCase();
+      if (aRu == queryLower && bRu != queryLower) return -1;
+      if (aRu != queryLower && bRu == queryLower) return 1;
+      if (aRu.startsWith(queryLower) && !bRu.startsWith(queryLower)) return -1;
+      if (!aRu.startsWith(queryLower) && bRu.startsWith(queryLower)) return 1;
+      return aRu.compareTo(bRu);
     });
 
     return results;
