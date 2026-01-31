@@ -1,0 +1,15 @@
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Presentations
+*.pptx
+*.ppt
+
+# Temporary files
+*.tmp
+*.temp
