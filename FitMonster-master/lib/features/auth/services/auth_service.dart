@@ -3,6 +3,7 @@ import 'package:crypto/crypto.dart';
 import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
+import '../../../core/services/profile_service.dart';
 
 /// Сервис аутентификации и управления пользователями
 class AuthService {
@@ -12,13 +13,14 @@ class AuthService {
   
   static Box<UserModel>? _usersBox;
   static UserModel? _currentUser;
+  static final ProfileService _profileService = ProfileService();
   
   /// Инициализация сервиса
   static Future<void> initialize() async {
     _usersBox = await Hive.openBox<UserModel>(_usersBoxName);
   }
   
-  /// Регистрация нового пользователя
+  /// Регистрация нового пользователя с автоматическим созданием нулевого профиля
   static Future<AuthResult> register({
     required String email,
     required String username,
@@ -71,9 +73,18 @@ class AuthService {
       // Сохранение пользователя
       await _usersBox!.put(userId, user);
       
+      // Создание нулевого профиля для нового пользователя
+      try {
+        await _profileService.createNewProfile(userId);
+        print('✅ Zero profile created for new user: $userId');
+      } catch (e) {
+        print('⚠️ Warning: Could not create zero profile for user $userId: $e');
+        // Не прерываем регистрацию из-за ошибки создания профиля
+      }
+      
       return AuthResult(
         success: true,
-        message: 'Регистрация успешна!',
+        message: 'Регистрация успешна! Создан нулевой профиль.',
         user: user,
       );
       

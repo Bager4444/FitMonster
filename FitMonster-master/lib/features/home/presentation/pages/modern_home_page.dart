@@ -4,6 +4,7 @@ import 'package:fitmonster/features/profile/presentation/pages/profile_page.dart
 import 'package:fitmonster/features/exercises/presentation/pages/workout_history_page.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/simple_camera_test_page.dart';
 import 'package:fitmonster/features/profile/presentation/pages/zero_profile_demo_page.dart';
+import 'package:fitmonster/features/auth/presentation/pages/welcome_page.dart';
 
 /// Современная главная страница с красивым дизайном
 /// Готова для конвертации через DhiWise
@@ -351,6 +352,28 @@ class _ModernHomePageState extends State<ModernHomePage>
               const SizedBox(width: 16),
               Expanded(
                 child: _buildActionCard(
+                  title: 'Регистрация',
+                  emoji: '📝',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WelcomePage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionCard(
                   title: 'Камера\nтест',
                   emoji: '📷',
                   gradient: const LinearGradient(
@@ -366,6 +389,8 @@ class _ModernHomePageState extends State<ModernHomePage>
                   },
                 ),
               ),
+              const SizedBox(width: 16),
+              const Expanded(child: SizedBox()), // Пустое место
             ],
           ),
         ],
