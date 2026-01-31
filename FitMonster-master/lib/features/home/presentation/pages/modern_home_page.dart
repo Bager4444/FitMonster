@@ -6,6 +6,7 @@ import 'package:fitmonster/features/exercises/presentation/pages/simple_camera_t
 import 'package:fitmonster/features/profile/presentation/pages/zero_profile_demo_page.dart';
 import 'package:fitmonster/features/auth/presentation/pages/welcome_page.dart';
 import 'package:fitmonster/features/debug/debug_page.dart';
+import 'package:fitmonster/features/stats/presentation/pages/zero_stats_page.dart';
 
 /// Современная главная страница с красивым дизайном
 /// Готова для конвертации через DhiWise
@@ -375,16 +376,16 @@ class _ModernHomePageState extends State<ModernHomePage>
             children: [
               Expanded(
                 child: _buildActionCard(
-                  title: 'Камера\nтест',
-                  emoji: '📷',
+                  title: 'Полная\nстатистика',
+                  emoji: '📊',
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF9B59B6), Color(0xFF8E44AD)],
+                    colors: [Color(0xFF4ECDC4), Color(0xFF44A08D)],
                   ),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const SimpleCameraTestPage(),
+                        builder: (context) => const ZeroStatsPage(),
                       ),
                     );
                   },
