@@ -1,20 +1,23 @@
-# fitmonster
+# FitMonster
 
-A new Flutter project.
+Фитнес-приложение на Flutter: упражнения с проверкой техники через камеру (ML Kit), диета и трекер питания.
 
-## Getting Started
+## Запуск
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run
+```
 
-## Документация проекта
+## Документация
 
-- **Анализ проекта (актуальное состояние кода/риски/баги):** `docs/PROJECT_ANALYSIS.md`
+Основная документация в папке [docs/](docs/):
 
-A few resources to get you started if this is your first Flutter project:
+- **[docs/ТЗ.md](docs/ТЗ.md)** — техническое задание
+- **[docs/STATUS.md](docs/STATUS.md)** — статус проекта
+- **[docs/BACKLOG.md](docs/BACKLOG.md)** — backlog и спринты
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Flutter
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [Документация Flutter](https://docs.flutter.dev/)
+- [Cookbook](https://docs.flutter.dev/cookbook)
