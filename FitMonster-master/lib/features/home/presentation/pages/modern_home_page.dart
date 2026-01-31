@@ -5,6 +5,7 @@ import 'package:fitmonster/features/exercises/presentation/pages/workout_history
 import 'package:fitmonster/features/exercises/presentation/pages/simple_camera_test_page.dart';
 import 'package:fitmonster/features/profile/presentation/pages/zero_profile_demo_page.dart';
 import 'package:fitmonster/features/auth/presentation/pages/welcome_page.dart';
+import 'package:fitmonster/features/debug/debug_page.dart';
 
 /// Современная главная страница с красивым дизайном
 /// Готова для конвертации через DhiWise
@@ -190,7 +191,7 @@ class _ModernHomePageState extends State<ModernHomePage>
           Expanded(
             child: _buildStatCard(
               icon: Icons.local_fire_department,
-              value: '247',
+              value: '0',
               label: 'Калории',
               color: const Color(0xFFFF6B6B),
             ),
@@ -199,7 +200,7 @@ class _ModernHomePageState extends State<ModernHomePage>
           Expanded(
             child: _buildStatCard(
               icon: Icons.timer_outlined,
-              value: '32',
+              value: '0',
               label: 'Минут',
               color: const Color(0xFF4ECDC4),
             ),
@@ -208,7 +209,7 @@ class _ModernHomePageState extends State<ModernHomePage>
           Expanded(
             child: _buildStatCard(
               icon: Icons.trending_up,
-              value: '7',
+              value: '0',
               label: 'Дней подряд',
               color: const Color(0xFF45B7D1),
             ),
@@ -390,7 +391,23 @@ class _ModernHomePageState extends State<ModernHomePage>
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(child: SizedBox()), // Пустое место
+              Expanded(
+                child: _buildActionCard(
+                  title: 'Очистить\nданные',
+                  emoji: '🗑️',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE74C3C), Color(0xFFC0392B)],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DebugPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ],
@@ -472,32 +489,35 @@ class _ModernHomePageState extends State<ModernHomePage>
                 ),
               ],
             ),
-            child: Column(
-              children: [
-                _buildActivityItem(
-                  title: 'Приседания 🏋️',
-                  subtitle: '3 подхода • 15 повторений',
-                  time: '2 часа назад',
-                  icon: Icons.fitness_center,
-                  color: const Color(0xFF667eea),
-                ),
-                _buildDivider(),
-                _buildActivityItem(
-                  title: 'Отжимания 💪',
-                  subtitle: '2 подхода • 10 повторений',
-                  time: '1 день назад',
-                  icon: Icons.sports_gymnastics,
-                  color: const Color(0xFF11998e),
-                ),
-                _buildDivider(),
-                _buildActivityItem(
-                  title: 'Планка 🧘',
-                  subtitle: '3 подхода • 30 секунд',
-                  time: '2 дня назад',
-                  icon: Icons.timer,
-                  color: const Color(0xFFFF6B6B),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.fitness_center_outlined,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Пока нет активности',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Начните тренировку, чтобы увидеть статистику',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -505,71 +525,4 @@ class _ModernHomePageState extends State<ModernHomePage>
     );
   }
 
-  Widget _buildActivityItem({
-    required String title,
-    required String subtitle,
-    required String time,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            time,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 1,
-      color: Colors.grey[200],
-    );
-  }
 }
