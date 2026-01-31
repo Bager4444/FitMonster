@@ -7,6 +7,7 @@ import 'package:fitmonster/features/profile/presentation/pages/zero_profile_demo
 import 'package:fitmonster/features/auth/presentation/pages/welcome_page.dart';
 import 'package:fitmonster/features/debug/debug_page.dart';
 import 'package:fitmonster/features/stats/presentation/pages/zero_stats_page.dart';
+import 'package:fitmonster/core/services/zero_stats_service.dart';
 
 /// Современная главная страница с красивым дизайном
 /// Готова для конвертации через DhiWise
@@ -192,7 +193,7 @@ class _ModernHomePageState extends State<ModernHomePage>
           Expanded(
             child: _buildStatCard(
               icon: Icons.local_fire_department,
-              value: '0',
+              value: ZeroStatsService.getStatString('calories'),
               label: 'Калории',
               color: const Color(0xFFFF6B6B),
             ),
@@ -201,7 +202,7 @@ class _ModernHomePageState extends State<ModernHomePage>
           Expanded(
             child: _buildStatCard(
               icon: Icons.timer_outlined,
-              value: '0',
+              value: ZeroStatsService.getStatString('minutes'),
               label: 'Минут',
               color: const Color(0xFF4ECDC4),
             ),
@@ -210,7 +211,7 @@ class _ModernHomePageState extends State<ModernHomePage>
           Expanded(
             child: _buildStatCard(
               icon: Icons.trending_up,
-              value: '0',
+              value: ZeroStatsService.getStatString('days_streak'),
               label: 'Дней подряд',
               color: const Color(0xFF45B7D1),
             ),

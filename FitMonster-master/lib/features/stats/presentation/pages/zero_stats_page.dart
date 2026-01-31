@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fitmonster/core/services/zero_stats_service.dart';
 
 /// Страница с полностью нулевой статистикой и очищенными лидербордами
 class ZeroStatsPage extends StatelessWidget {
@@ -51,12 +52,12 @@ class ZeroStatsPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _buildExerciseRow('Отжимания', '0', Icons.sports_gymnastics),
-            _buildExerciseRow('Приседания', '0', Icons.fitness_center),
-            _buildExerciseRow('Планка', '0 секунд', Icons.timer),
-            _buildExerciseRow('Скручивания', '0', Icons.sports_handball),
-            _buildExerciseRow('Подтягивания', '0', Icons.sports_martial_arts),
-            _buildExerciseRow('Берпи', '0', Icons.sports_kabaddi),
+            _buildExerciseRow('Отжимания', ZeroStatsService.getStatString('pushups'), Icons.sports_gymnastics),
+            _buildExerciseRow('Приседания', ZeroStatsService.getStatString('squats'), Icons.fitness_center),
+            _buildExerciseRow('Планка', '${ZeroStatsService.getStatString('plank_seconds')} секунд', Icons.timer),
+            _buildExerciseRow('Скручивания', ZeroStatsService.getStatString('crunches'), Icons.sports_handball),
+            _buildExerciseRow('Подтягивания', ZeroStatsService.getStatString('pullups'), Icons.sports_martial_arts),
+            _buildExerciseRow('Берпи', ZeroStatsService.getStatString('burpees'), Icons.sports_kabaddi),
           ],
         ),
       ),
@@ -115,7 +116,7 @@ class ZeroStatsPage extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     'Тренировки',
-                    '0',
+                    ZeroStatsService.getStatString('workouts'),
                     Icons.fitness_center,
                     Colors.orange,
                   ),
@@ -124,7 +125,7 @@ class ZeroStatsPage extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     'Повторения',
-                    '0',
+                    ZeroStatsService.getStatString('repetitions'),
                     Icons.repeat,
                     Colors.blue,
                   ),
@@ -137,7 +138,7 @@ class ZeroStatsPage extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     'Дней в режиме',
-                    '0',
+                    ZeroStatsService.getStatString('days_streak'),
                     Icons.calendar_today,
                     Colors.green,
                   ),
@@ -146,7 +147,7 @@ class ZeroStatsPage extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     'Минут',
-                    '0',
+                    ZeroStatsService.getStatString('minutes'),
                     Icons.timer,
                     Colors.purple,
                   ),
@@ -159,7 +160,7 @@ class ZeroStatsPage extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     'Калории',
-                    '0',
+                    ZeroStatsService.getStatString('calories'),
                     Icons.local_fire_department,
                     Colors.red,
                   ),
@@ -168,7 +169,7 @@ class ZeroStatsPage extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     'Очки',
-                    '0',
+                    ZeroStatsService.getStatString('points'),
                     Icons.star,
                     Colors.amber,
                   ),
@@ -269,7 +270,7 @@ class ZeroStatsPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              'Очищен',
+              ZeroStatsService.getLeaderboardStatus(region),
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade600,

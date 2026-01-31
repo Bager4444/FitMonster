@@ -3,23 +3,18 @@ import 'package:fitmonster/core/services/hive_service.dart';
 
 /// Сервис для работы со статистикой
 class StatsService {
-  /// Получить статистику пользователя
+  /// Получить статистику пользователя (всегда нулевую)
   Future<UserStats> getUserStats(String userId) async {
     try {
-      // Получаем из Hive (локально)
-      final localData = HiveService.get(
-        box: HiveService.userBox,
-        key: 'stats_$userId',
+      // Всегда возвращаем нулевую статистику
+      return UserStats(
+        workoutStreak: 0,
+        totalWorkouts: 0,
+        currentWeight: 0.0,
+        targetWeight: 0.0,
+        totalCalories: 0,
+        lastWorkoutDate: DateTime.now(),
       );
-
-      if (localData != null) {
-        if (localData is Map<String, dynamic>) {
-          return UserStats.fromMap(localData);
-        }
-      }
-
-      // Если нет данных, возвращаем пустую статистику
-      return UserStats();
     } catch (e) {
       print('❌ Error getting user stats: $e');
       return UserStats();
