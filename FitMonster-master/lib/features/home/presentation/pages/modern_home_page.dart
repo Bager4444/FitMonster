@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/exercises_page.dart';
 import 'package:fitmonster/features/profile/presentation/pages/profile_page.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/workout_history_page.dart';
-import 'package:fitmonster/features/exercises/presentation/pages/simple_camera_test_page.dart';
 import 'package:fitmonster/features/profile/presentation/pages/zero_profile_demo_page.dart';
 import 'package:fitmonster/features/auth/presentation/pages/welcome_page.dart';
 import 'package:fitmonster/features/debug/debug_page.dart';
