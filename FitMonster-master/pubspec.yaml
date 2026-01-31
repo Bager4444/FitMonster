@@ -39,6 +39,7 @@ dependencies:
   hive_flutter: ^1.1.0
   path_provider: ^2.1.2
   shared_preferences: ^2.2.2
+  crypto: ^3.0.3
   
   # State Management
   provider: ^6.1.1

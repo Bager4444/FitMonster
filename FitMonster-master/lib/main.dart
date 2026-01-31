@@ -4,7 +4,9 @@ import 'package:fitmonster/core/theme/app_theme.dart';
 import 'package:fitmonster/core/theme/theme_provider.dart';
 import 'package:fitmonster/core/constants/app_constants.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
-import 'package:fitmonster/features/home/presentation/pages/modern_home_page.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
+import 'package:fitmonster/features/home/presentation/pages/home_page.dart';
+import 'package:fitmonster/features/auth/presentation/pages/login_page.dart';
 
 void main() async {
   // Инициализация Flutter
@@ -28,11 +30,35 @@ class FitMonsterApp extends StatelessWidget {
           return MaterialApp(
             title: AppConstants.appName,
             theme: AppTheme.lightTheme,
-            home: const ModernHomePage(),
+            home: const AuthWrapper(),
             debugShowCheckedModeBanner: false,
           );
         },
       ),
+    );
+  }
+}
+
+/// Обертка для проверки авторизации
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: AuthService.isLoggedIn(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        final isLoggedIn = snapshot.data ?? false;
+        return isLoggedIn ? const HomePage() : const LoginPage();
+      },
     );
   }
 }

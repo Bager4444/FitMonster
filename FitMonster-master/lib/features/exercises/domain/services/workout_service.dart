@@ -14,7 +14,7 @@ class WorkoutService {
     required Exercise exercise,
     int targetReps = 10,
   }) async {
-    final userId = _authService.currentUserId;
+    final userId = await AuthService.getCurrentUserId();
     if (userId == null) {
       throw Exception('Пользователь не авторизован');
     }
