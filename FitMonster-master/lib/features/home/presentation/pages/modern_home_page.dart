@@ -3,6 +3,7 @@ import 'package:fitmonster/features/exercises/presentation/pages/exercises_page.
 import 'package:fitmonster/features/profile/presentation/pages/profile_page.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/workout_history_page.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/simple_camera_test_page.dart';
+import 'package:fitmonster/features/profile/presentation/pages/zero_profile_demo_page.dart';
 
 /// Современная главная страница с красивым дизайном
 /// Готова для конвертации через DhiWise
@@ -320,6 +321,46 @@ class _ModernHomePageState extends State<ModernHomePage>
                       context,
                       MaterialPageRoute(
                         builder: (context) => const WorkoutHistoryPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionCard(
+                  title: 'Нулевой\nпрофиль',
+                  emoji: '👤',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B6B), Color(0xFFFFE66D)],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ZeroProfileDemoPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildActionCard(
+                  title: 'Камера\nтест',
+                  emoji: '📷',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF9B59B6), Color(0xFF8E44AD)],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SimpleCameraTestPage(),
                       ),
                     );
                   },

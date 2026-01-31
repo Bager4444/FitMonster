@@ -56,18 +56,39 @@ class UserProfile extends HiveObject {
     this.name,
   });
 
-  /// Создать пустой профиль
+  /// Создать пустой профиль с нулевыми значениями
   factory UserProfile.empty() {
     return UserProfile(
       userId: '',
-      age: 25,
-      height: 170,
-      weight: 70,
+      age: 0,
+      height: 0.0,
+      weight: 0.0,
       gender: Gender.male,
-      activityLevel: ActivityLevel.moderate,
+      activityLevel: ActivityLevel.sedentary,
       goal: Goal.maintain,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      allergies: [],
+      contraindications: [],
+      name: '',
+    );
+  }
+
+  /// Создать нулевой профиль для конкретного пользователя
+  factory UserProfile.zero(String userId) {
+    return UserProfile(
+      userId: userId,
+      age: 0,
+      height: 0.0,
+      weight: 0.0,
+      gender: Gender.male,
+      activityLevel: ActivityLevel.sedentary,
+      goal: Goal.maintain,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      allergies: [],
+      contraindications: [],
+      name: '',
     );
   }
 

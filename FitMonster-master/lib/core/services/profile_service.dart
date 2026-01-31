@@ -3,7 +3,7 @@ import 'package:fitmonster/core/services/hive_service.dart';
 
 /// Сервис для работы с профилем пользователя
 class ProfileService {
-  /// Получить профиль пользователя
+  /// Получить профиль пользователя или создать нулевой
   Future<UserProfile?> getUserProfile(String userId) async {
     try {
       // Получаем из Hive (локально)
@@ -20,7 +20,10 @@ class ProfileService {
         }
       }
 
-      return null;
+      // Если профиля нет, создаем нулевой профиль
+      final zeroProfile = UserProfile.zero(userId);
+      await saveUserProfile(userId, zeroProfile);
+      return zeroProfile;
     } catch (e) {
       print('❌ Error getting user profile: $e');
       return null;
@@ -75,6 +78,19 @@ class ProfileService {
       await saveUserProfile(userId, updatedProfile);
     } catch (e) {
       print('❌ Error updating user profile: $e');
+      rethrow;
+    }
+  }
+
+  /// Создать новый нулевой профиль для пользователя
+  Future<UserProfile> createNewProfile(String userId) async {
+    try {
+      final zeroProfile = UserProfile.zero(userId);
+      await saveUserProfile(userId, zeroProfile);
+      print('✅ New zero profile created for user: $userId');
+      return zeroProfile;
+    } catch (e) {
+      print('❌ Error creating new profile: $e');
       rethrow;
     }
   }
