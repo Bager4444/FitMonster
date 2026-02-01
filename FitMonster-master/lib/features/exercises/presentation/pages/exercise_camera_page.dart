@@ -544,32 +544,41 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     // Используем улучшенный счетчик повторений (уже оптимизирован)
     final result = _repCounter.analyzePose(pose);
     
-    // Обновляем состояние только при изменениях
-    if (result.repCount > _repCount) {
-      _repCount = result.repCount;
+    // Для статических упражнений всегда обновляем время
+    if (_isStaticExercise()) {
+      _repCount = result.repCount; // Для планки это время в секундах
       _awardExperience();
       
       // Проверяем завершение для комплексов
-      if (widget.complex != null) {
-        bool shouldComplete = _isStaticExercise() ? _repCount >= 30 : _repCount >= _targetReps;
-        if (shouldComplete) {
+      if (widget.complex != null && _repCount >= 30) {
+        _completeExercise();
+        return;
+      }
+    } else {
+      // Для динамических упражнений обновляем только при увеличении
+      if (result.repCount > _repCount) {
+        _repCount = result.repCount;
+        _awardExperience();
+        
+        // Проверяем завершение для комплексов
+        if (widget.complex != null && _repCount >= _targetReps) {
           _completeExercise();
           return;
         }
       }
-      
-      // Асинхронно сохраняем повторение
-      if (_currentSession != null) {
-        _workoutService.addRep(
-          _currentSession!,
-          formScore: _formScore,
-          isCorrect: _formScore > 60,
-        ).then((session) {
-          _currentSession = session;
-        }).catchError((e) {
-          // Игнорируем ошибки сохранения для производительности
-        });
-      }
+    }
+    
+    // Асинхронно сохраняем повторение/время
+    if (_currentSession != null) {
+      _workoutService.addRep(
+        _currentSession!,
+        formScore: _formScore,
+        isCorrect: _formScore > 60,
+      ).then((session) {
+        _currentSession = session;
+      }).catchError((e) {
+        // Игнорируем ошибки сохранения для производительности
+      });
     }
     
     // Обновляем обратную связь только если есть хорошая уверенность
