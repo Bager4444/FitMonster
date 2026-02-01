@@ -1,0 +1,3 @@
+Merge Dev2 into Dev1
+
+Объединение веток с добавлением .gitignore для исключения FitMonster-master и документации
