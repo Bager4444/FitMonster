@@ -327,8 +327,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         
         if (mounted) {
           setState(() {
-            // Сохраняем предыдущие позы, обновляем только FPS
-            _feedback = 'Ультра-режим! (${_currentFps.toStringAsFixed(0)} FPS)';
+            // Сохраняем предыдущие позы, не показываем FPS
+            _feedback = 'Отлично! Продолжайте!';
           });
         }
         return;
@@ -364,7 +364,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
             if (confidence < 40) {
               _feedback = 'Улучшите освещение';
             } else {
-              _feedback = 'УЛЬТРА-режим! (${_currentFps.toStringAsFixed(0)} FPS) 🚀';
+              _feedback = 'Отлично! Продолжайте! 🚀';
               _analyzeExerciseUltraFast(poses);
             }
           }
@@ -1305,7 +1305,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                       ),
                     ),
                   
-                  // FPS и время тренировки
+                  // Время тренировки
                   if (_isRecording)
                     Positioned(
                       bottom: 16,
@@ -1316,24 +1316,12 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                           color: Colors.black.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'FPS: ${_currentFps.toStringAsFixed(1)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              _formatDuration(_workoutDuration),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          _formatDuration(_workoutDuration),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),

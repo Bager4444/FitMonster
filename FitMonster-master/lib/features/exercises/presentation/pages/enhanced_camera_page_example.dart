@@ -174,7 +174,6 @@ class _EnhancedCameraPageExampleState extends State<EnhancedCameraPageExample> {
       print('   Повторения: ${result.repCount}');
       print('   Техника: ${(result.technicalScore * 100).toInt()}%');
       print('   Фаза: ${result.movementPhase}');
-      print('   FPS: ${result.avgFps.toStringAsFixed(1)}');
       print('   Режим: ${result.performanceMode}');
       print('   Углы: ${result.keyAngles}');
     }
@@ -253,7 +252,6 @@ class _EnhancedCameraPageExampleState extends State<EnhancedCameraPageExample> {
             children: [
               Text('Повторения: $_repCount'),
               Text('Техника: ${(_technicalScore * 100).toInt()}%'),
-              Text('Средний FPS: ${_currentFps.toStringAsFixed(1)}'),
               Text('Режим: $_performanceMode'),
               const SizedBox(height: 16),
               const Text('Ключевые углы:', style: TextStyle(fontWeight: FontWeight.bold)),

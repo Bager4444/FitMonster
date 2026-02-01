@@ -168,7 +168,7 @@ class _EnhancedExerciseCameraPageState extends State<EnhancedExerciseCameraPage>
         setState(() {
           _poses = [testPose];
           _currentFPS = ultraResult.achievedFPS;
-          _feedback = 'FPS: ${_currentFPS.toStringAsFixed(1)} | ${fpsResult.status}';
+          _feedback = 'Отлично! Продолжайте!';
           
           // Симулируем подсчёт повторений
           if (ultraResult.validNodes > 8) {
