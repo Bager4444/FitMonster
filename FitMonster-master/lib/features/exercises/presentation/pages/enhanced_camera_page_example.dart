@@ -238,7 +238,6 @@ class _EnhancedCameraPageExampleState extends State<EnhancedCameraPageExample> {
   }
 
   void _showResults() {
-    final stats = _smartEngine.getPerformanceStats();
     final recommendations = _smartEngine.getOptimizationRecommendations();
     
     showDialog(

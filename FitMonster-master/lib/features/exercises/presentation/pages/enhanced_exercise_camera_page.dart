@@ -36,7 +36,6 @@ class _EnhancedExerciseCameraPageState extends State<EnhancedExerciseCameraPage>
   
   // Состояние тренировки
   int _repCount = 0;
-  double _formScore = 0.0;
   String _feedback = 'Встаньте в кадр';
   List<Pose> _poses = [];
   
@@ -129,7 +128,6 @@ class _EnhancedExerciseCameraPageState extends State<EnhancedExerciseCameraPage>
     setState(() {
       _isRecording = true;
       _repCount = 0;
-      _formScore = 0.0;
       _feedback = 'Начинайте упражнение!';
     });
     
@@ -159,7 +157,7 @@ class _EnhancedExerciseCameraPageState extends State<EnhancedExerciseCameraPage>
       
       // Обрабатываем с оптимизаторами графа
       final ultraResult = _graphManager.processFrame(testPose);
-      final fpsResult = _fpsOptimizer.optimizeFor20FPS(testPose, widget.exercise.id);
+      _fpsOptimizer.optimizeFor20FPS(testPose, widget.exercise.id);
       
       // Регистрируем данные в сервисе очистки
       _cleanupService.registerPose(testPose);
@@ -273,7 +271,6 @@ class _EnhancedExerciseCameraPageState extends State<EnhancedExerciseCameraPage>
   void _clearLocalData() {
     _poses.clear();
     _repCount = 0;
-    _formScore = 0.0;
     _frameCount = 0;
     _currentFPS = 0.0;
     print('🗑️ Локальные данные очищены');
