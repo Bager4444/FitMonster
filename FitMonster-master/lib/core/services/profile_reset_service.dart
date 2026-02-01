@@ -31,6 +31,34 @@ class ProfileResetService {
       return false;
     }
   }
-}
-}
+
+  /// Создать нулевой профиль
+  Future<UserProfile> createZeroProfile(String userId) async {
+    try {
+      return await _profileService.createNewProfile(userId);
+    } catch (e) {
+      print('❌ Error creating zero profile: $e');
+      rethrow;
+    }
+  }
+
+  /// Создать абсолютно нулевой профиль
+  Future<UserProfile> createAbsoluteZeroProfile(String userId) async {
+    try {
+      return await _profileService.createNewProfile(userId);
+    } catch (e) {
+      print('❌ Error creating absolute zero profile: $e');
+      rethrow;
+    }
+  }
+
+  /// Создать шаблонный профиль
+  Future<UserProfile> createTemplateProfile(String userId) async {
+    try {
+      return await _profileService.createNewProfile(userId);
+    } catch (e) {
+      print('❌ Error creating template profile: $e');
+      rethrow;
+    }
+  }
 }

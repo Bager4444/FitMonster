@@ -26,9 +26,8 @@ class _WorkoutHistoryPageState extends State<WorkoutHistoryPage> {
     try {
       setState(() => _isLoading = true);
       
-      final authService = AuthService();
       final workoutService = WorkoutService();
-      final userId = authService.currentUserId;
+      final userId = await AuthService.getCurrentUserId();
       
       if (userId != null) {
         final workouts = await workoutService.getUserWorkouts(userId);
