@@ -1,0 +1,173 @@
+[
+  {
+    "id": "recipe_001",
+    "name": "Grilled Chicken Breast",
+    "nameRu": "Куриная грудка на гриле",
+    "description": "Simple and healthy grilled chicken breast",
+    "ingredients": [
+      {
+        "foodId": "usda_173944",
+        "foodName": "Chicken breast",
+        "amount": 200,
+        "unit": "g",
+        "unitRu": "г",
+        "calories": 330,
+        "protein": 62,
+        "fat": 7,
+        "carbs": 0
+      },
+      {
+        "foodId": "usda_173945",
+        "foodName": "Olive oil",
+        "amount": 5,
+        "unit": "ml",
+        "unitRu": "мл",
+        "calories": 40,
+        "protein": 0,
+        "fat": 4.5,
+        "carbs": 0
+      }
+    ],
+    "instructions": [
+      "Season chicken breast with salt and pepper",
+      "Heat grill to medium-high",
+      "Brush with olive oil",
+      "Grill for 6-7 minutes per side",
+      "Let rest for 5 minutes before serving"
+    ],
+    "prepTimeMinutes": 10,
+    "cookTimeMinutes": 15,
+    "servings": 1,
+    "totalCalories": 370,
+    "totalProtein": 62,
+    "totalFat": 11.5,
+    "totalCarbs": 0,
+    "tags": ["dinner", "high-protein", "low-carb"],
+    "source": "Basic Recipes"
+  },
+  {
+    "id": "recipe_002",
+    "name": "Greek Salad",
+    "nameRu": "Греческий салат",
+    "description": "Fresh and healthy Mediterranean salad",
+    "ingredients": [
+      {
+        "foodId": "usda_173946",
+        "foodName": "Tomato",
+        "amount": 150,
+        "unit": "g",
+        "unitRu": "г",
+        "calories": 27,
+        "protein": 1.3,
+        "fat": 0.3,
+        "carbs": 5.8
+      },
+      {
+        "foodId": "usda_173947",
+        "foodName": "Cucumber",
+        "amount": 100,
+        "unit": "g",
+        "unitRu": "г",
+        "calories": 16,
+        "protein": 0.7,
+        "fat": 0.1,
+        "carbs": 3.6
+      },
+      {
+        "foodId": "usda_173948",
+        "foodName": "Feta cheese",
+        "amount": 50,
+        "unit": "g",
+        "unitRu": "г",
+        "calories": 132,
+        "protein": 7,
+        "fat": 11,
+        "carbs": 1.2
+      },
+      {
+        "foodId": "usda_173949",
+        "foodName": "Olive oil",
+        "amount": 10,
+        "unit": "ml",
+        "unitRu": "мл",
+        "calories": 80,
+        "protein": 0,
+        "fat": 9,
+        "carbs": 0
+      }
+    ],
+    "instructions": [
+      "Dice tomatoes and cucumber",
+      "Cut feta cheese into cubes",
+      "Mix vegetables in a bowl",
+      "Add feta cheese",
+      "Drizzle with olive oil",
+      "Season with salt and oregano"
+    ],
+    "prepTimeMinutes": 15,
+    "cookTimeMinutes": 0,
+    "servings": 1,
+    "totalCalories": 255,
+    "totalProtein": 9,
+    "totalFat": 20.4,
+    "totalCarbs": 10.6,
+    "tags": ["lunch", "vegetarian", "salad", "mediterranean"],
+    "source": "Basic Recipes"
+  },
+  {
+    "id": "recipe_003",
+    "name": "Oatmeal with Berries",
+    "nameRu": "Овсянка с ягодами",
+    "description": "Healthy breakfast with oats and fresh berries",
+    "ingredients": [
+      {
+        "foodId": "usda_173950",
+        "foodName": "Oats",
+        "amount": 50,
+        "unit": "g",
+        "unitRu": "г",
+        "calories": 194,
+        "protein": 6.9,
+        "fat": 3.6,
+        "carbs": 33
+      },
+      {
+        "foodId": "usda_173951",
+        "foodName": "Blueberries",
+        "amount": 50,
+        "unit": "g",
+        "unitRu": "г",
+        "calories": 29,
+        "protein": 0.4,
+        "fat": 0.2,
+        "carbs": 7.4
+      },
+      {
+        "foodId": "usda_173952",
+        "foodName": "Milk",
+        "amount": 200,
+        "unit": "ml",
+        "unitRu": "мл",
+        "calories": 122,
+        "protein": 6.6,
+        "fat": 6.4,
+        "carbs": 9.4
+      }
+    ],
+    "instructions": [
+      "Cook oats in milk for 5 minutes",
+      "Stir occasionally",
+      "Add blueberries",
+      "Serve warm"
+    ],
+    "prepTimeMinutes": 5,
+    "cookTimeMinutes": 5,
+    "servings": 1,
+    "totalCalories": 345,
+    "totalProtein": 13.9,
+    "totalFat": 10.2,
+    "totalCarbs": 49.8,
+    "tags": ["breakfast", "healthy", "vegetarian"],
+    "source": "Basic Recipes"
+  }
+]
