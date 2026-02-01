@@ -182,7 +182,8 @@ class ImprovedRepCounter {
       return RepCountResult(
         repCount: config?.exerciseType == ExerciseType.static ? _totalStaticSeconds : _repCount,
         isInDownPosition: _isInDownPosition,
-        feedback: 'Анализ...',
+        feedback: config?.exerciseType == ExerciseType.static ? 
+                  'Держите позу! ${_totalStaticSeconds}с 💪' : 'Анализ...',
         confidence: 0.5,
       );
     }
@@ -274,9 +275,7 @@ class ImprovedRepCounter {
     if (_staticStartTime != null) {
       final now = DateTime.now();
       final elapsed = now.difference(_staticStartTime!).inSeconds;
-      if (elapsed > _totalStaticSeconds) {
-        _totalStaticSeconds = elapsed;
-      }
+      _totalStaticSeconds = elapsed;
     }
   }
   
@@ -295,10 +294,11 @@ class ImprovedRepCounter {
       if (!_isInCorrectStaticPosition) {
         _isInCorrectStaticPosition = true;
         _staticStartTime = DateTime.now();
-      } else {
-        // Обновляем время
-        _updateStaticTime();
+        _totalStaticSeconds = 0; // Сбрасываем счетчик при новом старте
       }
+      
+      // Всегда обновляем время когда в правильной позиции
+      _updateStaticTime();
       
       feedback = 'Отлично! Держите позу! ${_totalStaticSeconds}с 💪';
     } else {
