@@ -74,9 +74,9 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   // Флаг обработки кадра
   bool _isProcessingFrame = false;
   DateTime _lastFrameTime = DateTime.now();
-  static const int _targetFps = 5; // Ограничиваем до 5 FPS для минимальной нагрузки
+  static const int _targetFps = 10; // Баланс: отзывчивость + умеренная нагрузка на CPU
   int _frameSkipCounter = 0;
-  static const int _frameSkipRate = 3; // Обрабатываем каждый 3-й кадр
+  static const int _frameSkipRate = 2; // Обрабатываем каждый 2-й кадр
   
   // Система опыта
   int _lastRepCountForExp = 0; // Последний подсчитанный репкаунт для опыта
@@ -257,7 +257,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       return;
     }
 
-    print('📷 Starting camera image stream (5 FPS, skip every 3rd frame)');
+    print('📷 Starting camera image stream (target $_targetFps FPS, skip every $_frameSkipRate frame)');
     
     _cameraController!.startImageStream((CameraImage image) {
       // Пропускаем кадр если предыдущий еще обрабатывается
@@ -540,7 +540,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   
   /// Определяет, является ли упражнение статическим (планка)
   bool _isStaticExercise() {
-    return widget.exercise.id == 'plank' || widget.exercise.id == 'side_plank';
+    const staticIds = ['plank', 'side_plank', 'downward_dog', 'superman', 'plank_leg_lifts'];
+    return staticIds.contains(widget.exercise.id);
   }
   
   /// Возвращает текст для отображения в большом счетчике
@@ -934,22 +935,24 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                       child: CircularProgressIndicator(color: Colors.white),
                     ),
                   
-                  // Overlay с позами
+                  // Overlay с позами (RepaintBoundary изолирует перерисовку)
                   if (_poses.isNotEmpty)
                     Positioned.fill(
-                      child: CustomPaint(
-                        painter: PosePainter(
-                          poses: _poses,
-                          imageSize: _inputImageSize == Size.zero
-                              ? Size(
-                                  _cameraController?.value.previewSize?.width ?? 480,
-                                  _cameraController?.value.previewSize?.height ?? 640,
-                                )
-                              : _inputImageSize,
-                          rotation: _inputImageRotation,
-                          // Зеркалим только отрисовку "скелета"
-                          mirror: _cameraController?.description.lensDirection ==
-                              CameraLensDirection.front,
+                      child: RepaintBoundary(
+                        child: CustomPaint(
+                          painter: PosePainter(
+                            poses: _poses,
+                            imageSize: _inputImageSize == Size.zero
+                                ? Size(
+                                    _cameraController?.value.previewSize?.width ?? 480,
+                                    _cameraController?.value.previewSize?.height ?? 640,
+                                  )
+                                : _inputImageSize,
+                            rotation: _inputImageRotation,
+                            // Зеркалим только отрисовку "скелета"
+                            mirror: _cameraController?.description.lensDirection ==
+                                CameraLensDirection.front,
+                          ),
                         ),
                       ),
                     ),

@@ -77,6 +77,19 @@ class DietService {
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
   }
 
+  /// Даты, когда была занесена еда в дневник, за последние [days] дней (для стрик-календаря)
+  static Future<Set<DateTime>> getFoodLogDatesLastNDays(int days) async {
+    final now = DateTime.now();
+    final end = now.add(const Duration(days: 1));
+    final start = now.subtract(Duration(days: days));
+    final logs = await getFoodLogsForPeriod(start, end);
+    final dates = <DateTime>{};
+    for (final log in logs) {
+      dates.add(DateTime(log.timestamp.year, log.timestamp.month, log.timestamp.day));
+    }
+    return dates;
+  }
+
   /// Обновить запись о еде
   static Future<void> updateFoodLog(FoodLog log) async {
     final box = await Hive.openBox<FoodLog>(_foodLogsBoxName);

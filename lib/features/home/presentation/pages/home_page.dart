@@ -65,9 +65,8 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             child: SafeArea(
-              child: Container(
-                height: 70,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -130,7 +129,7 @@ class _HomePageState extends State<HomePage> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected
               ? (themeProvider.isDarkMode
@@ -145,14 +144,14 @@ class _HomePageState extends State<HomePage> {
             Icon(
               icon,
               color: color,
-              size: 24,
+              size: 22,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),

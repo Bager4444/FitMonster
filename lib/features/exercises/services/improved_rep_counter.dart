@@ -16,7 +16,7 @@ class ImprovedRepCounter {
   // Оптимизированные настройки для FPS
   static const int _minTimeBetweenReps = 600;
   static const double _minConfidence = 0.35;
-  static const int _skipFrames = 2;
+  static const int _skipFrames = 1; // Анализируем каждый кадр для быстрой реакции
   
   // Кэш для вычислений
   final Map<String, double> _angleCache = {};
@@ -82,31 +82,33 @@ class ImprovedRepCounter {
     
     'jumping_jacks': OptimizedExerciseConfig(
       primaryJoint: JointType.shoulder,
-      primaryDownAngle: 10,
-      primaryUpAngle: 50,
+      primaryDownAngle: 18,  // руки внизу (низкий spread)
+      primaryUpAngle: 55,    // руки вверху/в стороны (высокий spread)
       criticalPoints: [
         PoseLandmarkType.leftWrist,
         PoseLandmarkType.rightWrist,
-        PoseLandmarkType.leftAnkle,
-        PoseLandmarkType.rightAnkle,
+        PoseLandmarkType.leftShoulder,
+        PoseLandmarkType.rightShoulder,
       ],
-      minMovementAmplitude: 0.20,
+      minMovementAmplitude: 0.18,
       confidenceBoost: 0.9,
       exerciseType: ExerciseType.dynamic,
     ),
     
-    // Статические упражнения - считаем время
+    // Статические упражнения - считаем время (плечи, бёдра, локти, колени — линия тела)
     'plank': OptimizedExerciseConfig(
       primaryJoint: JointType.elbow,
-      primaryDownAngle: 160, // Прямая линия тела
+      primaryDownAngle: 150, // Допускаем слегка согнутые руки
       primaryUpAngle: 180,
       criticalPoints: [
         PoseLandmarkType.leftShoulder,
         PoseLandmarkType.rightShoulder,
+        PoseLandmarkType.leftElbow,
+        PoseLandmarkType.rightElbow,
         PoseLandmarkType.leftHip,
         PoseLandmarkType.rightHip,
-        PoseLandmarkType.leftAnkle,
-        PoseLandmarkType.rightAnkle,
+        PoseLandmarkType.leftKnee,
+        PoseLandmarkType.rightKnee,
       ],
       minMovementAmplitude: 0.02, // Минимальное движение для статики
       confidenceBoost: 1.0,
@@ -120,12 +122,233 @@ class ImprovedRepCounter {
       criticalPoints: [
         PoseLandmarkType.leftShoulder,
         PoseLandmarkType.rightShoulder,
+        PoseLandmarkType.leftElbow,
+        PoseLandmarkType.rightElbow,
         PoseLandmarkType.leftHip,
         PoseLandmarkType.rightHip,
+        PoseLandmarkType.leftKnee,
+        PoseLandmarkType.rightKnee,
       ],
       minMovementAmplitude: 0.02,
       confidenceBoost: 1.0,
       exerciseType: ExerciseType.static,
+    ),
+    // Остальные упражнения — конфиги для подсчёта
+    'leg_raises': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 100,
+      primaryUpAngle: 165,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.12,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'crunches': OptimizedExerciseConfig(
+      primaryJoint: JointType.hip,
+      primaryDownAngle: 45,
+      primaryUpAngle: 110,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.10,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'burpees': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 125,
+      primaryUpAngle: 170,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.14,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'jump_rope': OptimizedExerciseConfig(
+      primaryJoint: JointType.shoulder,
+      primaryDownAngle: 18,
+      primaryUpAngle: 55,
+      criticalPoints: [PoseLandmarkType.leftWrist, PoseLandmarkType.rightWrist, PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+      minMovementAmplitude: 0.18,
+      confidenceBoost: 0.9,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'downward_dog': OptimizedExerciseConfig(
+      primaryJoint: JointType.elbow,
+      primaryDownAngle: 155,
+      primaryUpAngle: 180,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.02,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.static,
+    ),
+    'running_in_place': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 100,
+      primaryUpAngle: 165,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.14,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'mountain_climbers': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 85,
+      primaryUpAngle: 160,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.14,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'high_knees': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 110,
+      primaryUpAngle: 165,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.14,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'jump_squats': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 125,
+      primaryUpAngle: 170,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.12,
+      confidenceBoost: 1.2,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'reverse_lunges': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 115,
+      primaryUpAngle: 165,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.15,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'knee_pushups': OptimizedExerciseConfig(
+      primaryJoint: JointType.elbow,
+      primaryDownAngle: 95,
+      primaryUpAngle: 170,
+      criticalPoints: [PoseLandmarkType.leftElbow, PoseLandmarkType.rightElbow, PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+      minMovementAmplitude: 0.10,
+      confidenceBoost: 1.1,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'calf_raises': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 165,
+      primaryUpAngle: 180,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftAnkle, PoseLandmarkType.rightAnkle],
+      minMovementAmplitude: 0.06,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'superman': OptimizedExerciseConfig(
+      primaryJoint: JointType.hip,
+      primaryDownAngle: 160,
+      primaryUpAngle: 180,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.02,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.static,
+    ),
+    'glute_bridge': OptimizedExerciseConfig(
+      primaryJoint: JointType.hip,
+      primaryDownAngle: 115,
+      primaryUpAngle: 170,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.12,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'bicycle_crunches': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 85,
+      primaryUpAngle: 150,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.12,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'sumo_squats': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 120,
+      primaryUpAngle: 170,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.12,
+      confidenceBoost: 1.2,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'plank_leg_lifts': OptimizedExerciseConfig(
+      primaryJoint: JointType.elbow,
+      primaryDownAngle: 158,
+      primaryUpAngle: 180,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.02,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.static,
+    ),
+    'reverse_crunches': OptimizedExerciseConfig(
+      primaryJoint: JointType.hip,
+      primaryDownAngle: 55,
+      primaryUpAngle: 120,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.10,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'burpee_pushup': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 125,
+      primaryUpAngle: 170,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.14,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'lateral_lunges': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 115,
+      primaryUpAngle: 165,
+      criticalPoints: [PoseLandmarkType.leftKnee, PoseLandmarkType.rightKnee, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.15,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'russian_twists': OptimizedExerciseConfig(
+      primaryJoint: JointType.knee,
+      primaryDownAngle: 100,
+      primaryUpAngle: 160,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.10,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'single_leg_deadlift': OptimizedExerciseConfig(
+      primaryJoint: JointType.hip,
+      primaryDownAngle: 95,
+      primaryUpAngle: 170,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.12,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'jump_in_place': OptimizedExerciseConfig(
+      primaryJoint: JointType.shoulder,
+      primaryDownAngle: 18,
+      primaryUpAngle: 55,
+      criticalPoints: [PoseLandmarkType.leftWrist, PoseLandmarkType.rightWrist, PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+      minMovementAmplitude: 0.18,
+      confidenceBoost: 0.9,
+      exerciseType: ExerciseType.dynamic,
+    ),
+    'sit_ups': OptimizedExerciseConfig(
+      primaryJoint: JointType.hip,
+      primaryDownAngle: 45,
+      primaryUpAngle: 115,
+      criticalPoints: [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+      minMovementAmplitude: 0.12,
+      confidenceBoost: 1.0,
+      exerciseType: ExerciseType.dynamic,
     ),
   };
   
@@ -222,8 +445,13 @@ class ImprovedRepCounter {
       );
     }
     
-    // Кэшированный расчет угла
-    final primaryAngle = _getCachedAngle(pose, config.primaryJoint, 'primary');
+    // Угол зависит от типа упражнения (приседания — без изменений, остальные — своя логика)
+    double? primaryAngle = _getPrimaryAngleForExercise(pose, config);
+    // Для статики: если угол не посчитался, но человек в кадре — считаем позу правильной и идём в таймер
+    if (primaryAngle == null && config.exerciseType == ExerciseType.static &&
+        criticalResult.isValid && criticalResult.confidence > 0.35) {
+      primaryAngle = (config.primaryDownAngle + config.primaryUpAngle) / 2;
+    }
     if (primaryAngle == null) {
       if (config.exerciseType == ExerciseType.static) {
         _isInCorrectStaticPosition = false;
@@ -283,10 +511,9 @@ class ImprovedRepCounter {
   /// Анализ статических упражнений (планка) - считаем время
   RepCountResult _analyzeStaticExercise(OptimizedExerciseConfig config, double smoothedAngle, 
                                        double confidence, double movementScore) {
-    // Проверяем правильность позы
+    // Для статики учитываем только угол: движение из камеры/дрожи даёт движение=2.0 и ломало подсчёт
     final isCorrectPosition = smoothedAngle >= config.primaryDownAngle && 
-                             smoothedAngle <= config.primaryUpAngle &&
-                             movementScore < 0.3; // Минимальное движение
+                             smoothedAngle <= config.primaryUpAngle;
     
     String feedback;
     
@@ -310,8 +537,6 @@ class ImprovedRepCounter {
         feedback = _getStaticPositionFeedback(config.primaryJoint, 'low');
       } else if (smoothedAngle > config.primaryUpAngle) {
         feedback = _getStaticPositionFeedback(config.primaryJoint, 'high');
-      } else if (movementScore > 0.5) {
-        feedback = 'Держитесь неподвижно! 🧘‍♀️';
       } else {
         feedback = 'Примите правильную позу';
       }
@@ -377,6 +602,8 @@ class ImprovedRepCounter {
         }
       case JointType.shoulder:
         return 'Держите плечи ровно! 💪';
+      case JointType.hip:
+        return 'Держите корпус ровно! 💪';
     }
   }
   
@@ -393,7 +620,9 @@ class ImprovedRepCounter {
       }
     }
     
-    if (validPoints < config.criticalPoints.length * 0.6) {
+    // Для статики (планка и т.д.) допускаем 50% точек — при виде спереди не всё видно
+    final minPointsRatio = config.exerciseType == ExerciseType.static ? 0.5 : 0.6;
+    if (validPoints < config.criticalPoints.length * minPointsRatio) {
       return CriticalPointsResult(
         isValid: false,
         confidence: 0,
@@ -431,6 +660,55 @@ class ImprovedRepCounter {
     
     return null;
   }
+
+  /// Угол для подсчёта: приседания — как раньше, остальные упражнения — своя логика
+  double? _getPrimaryAngleForExercise(Pose pose, OptimizedExerciseConfig config) {
+    final result = _getPrimaryAngleResultForExercise(pose, config);
+    if (result == null || !result.isValid) return null;
+    return _addToSmartHistory('primary', result.angle);
+  }
+
+  _AngleResult? _getPrimaryAngleResultForExercise(Pose pose, OptimizedExerciseConfig config) {
+    switch (_currentExerciseType) {
+      case 'pushups':
+      case 'knee_pushups':
+        return _fastElbowAngleBoth(pose);
+      case 'lunges':
+      case 'reverse_lunges':
+      case 'lateral_lunges':
+      case 'mountain_climbers':
+      case 'bicycle_crunches':
+        return _fastKneeAngleMin(pose);
+      case 'jumping_jacks':
+      case 'jump_rope':
+      case 'jump_in_place':
+        return _fastJumpingJackSpread(pose);
+      case 'plank':
+      case 'side_plank':
+        return config.primaryJoint == JointType.elbow ? _fastElbowAngleBoth(pose) : _calculateOptimizedAngle(pose, config.primaryJoint);
+      case 'downward_dog':
+      case 'superman':
+      case 'plank_leg_lifts':
+        return _calculateOptimizedAngle(pose, config.primaryJoint);
+      case 'squats':
+      case 'jump_squats':
+      case 'sumo_squats':
+      case 'leg_raises':
+      case 'burpees':
+      case 'running_in_place':
+      case 'high_knees':
+      case 'calf_raises':
+      case 'burpee_pushup':
+      case 'russian_twists':
+      case 'crunches':
+      case 'glute_bridge':
+      case 'reverse_crunches':
+      case 'single_leg_deadlift':
+      case 'sit_ups':
+      default:
+        return _calculateOptimizedAngle(pose, config.primaryJoint);
+    }
+  }
   
   /// Оптимизированный расчет угла
   _AngleResult _calculateOptimizedAngle(Pose pose, JointType jointType) {
@@ -441,7 +719,41 @@ class ImprovedRepCounter {
         return _fastElbowAngle(pose);
       case JointType.shoulder:
         return _fastShoulderAngle(pose);
+      case JointType.hip:
+        return _fastHipAngle(pose);
     }
+  }
+
+  /// Угол в тазобедренном суставе (плечо–таз–колено) — для скручиваний, подъёмов корпуса, мостика
+  _AngleResult _fastHipAngle(Pose pose) {
+    final leftS = pose.landmarks[PoseLandmarkType.leftShoulder];
+    final leftH = pose.landmarks[PoseLandmarkType.leftHip];
+    final leftK = pose.landmarks[PoseLandmarkType.leftKnee];
+    final rightS = pose.landmarks[PoseLandmarkType.rightShoulder];
+    final rightH = pose.landmarks[PoseLandmarkType.rightHip];
+    final rightK = pose.landmarks[PoseLandmarkType.rightKnee];
+    double? leftAngle;
+    double? rightAngle;
+    double leftConf = 0, rightConf = 0;
+    if (leftS != null && leftH != null && leftK != null) {
+      leftAngle = _quickAngle(leftS, leftH, leftK);
+      leftConf = (leftS.likelihood + leftH.likelihood + leftK.likelihood) / 3;
+    }
+    if (rightS != null && rightH != null && rightK != null) {
+      rightAngle = _quickAngle(rightS, rightH, rightK);
+      rightConf = (rightS.likelihood + rightH.likelihood + rightK.likelihood) / 3;
+    }
+    if (leftAngle != null && rightAngle != null && (leftConf > _minConfidence || rightConf > _minConfidence)) {
+      final avgAngle = (leftAngle * leftConf + rightAngle * rightConf) / (leftConf + rightConf);
+      return _AngleResult(angle: avgAngle, confidence: (leftConf + rightConf) / 2, isValid: true, feedback: 'OK');
+    }
+    if (leftAngle != null && leftConf > _minConfidence) {
+      return _AngleResult(angle: leftAngle!, confidence: leftConf, isValid: true, feedback: 'OK');
+    }
+    if (rightAngle != null && rightConf > _minConfidence) {
+      return _AngleResult(angle: rightAngle!, confidence: rightConf, isValid: true, feedback: 'OK');
+    }
+    return _AngleResult(angle: 0, confidence: 0, isValid: false, feedback: 'Корпус не виден');
   }
   
   /// Быстрый расчет угла в колене
@@ -484,7 +796,7 @@ class ImprovedRepCounter {
     return _AngleResult(angle: 0, confidence: 0, isValid: false, feedback: 'Ноги не видны');
   }
   
-  /// Быстрый расчет угла в локте
+  /// Быстрый расчет угла в локте (одна рука)
   _AngleResult _fastElbowAngle(Pose pose) {
     final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
     final leftElbow = pose.landmarks[PoseLandmarkType.leftElbow];
@@ -503,6 +815,84 @@ class ImprovedRepCounter {
     }
     
     return _AngleResult(angle: 0, confidence: 0, isValid: false, feedback: 'Руки не видны');
+  }
+
+  /// Оба локтя (среднее) — для отжиманий
+  _AngleResult _fastElbowAngleBoth(Pose pose) {
+    final left = _fastElbowAngle(pose);
+    final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+    final rightElbow = pose.landmarks[PoseLandmarkType.rightElbow];
+    final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist];
+    if (rightShoulder == null || rightElbow == null || rightWrist == null) return left;
+    final rightAngle = _quickAngle(rightShoulder, rightElbow, rightWrist);
+    final rightConf = (rightShoulder.likelihood + rightElbow.likelihood + rightWrist.likelihood) / 3;
+    final avgAngle = (left.angle * left.confidence + rightAngle * rightConf) / (left.confidence + rightConf);
+    return _AngleResult(
+      angle: avgAngle,
+      confidence: (left.confidence + rightConf) / 2,
+      isValid: left.isValid || rightConf > _minConfidence,
+      feedback: 'OK',
+    );
+  }
+
+  /// Минимум из двух колен (согнутая нога в выпаде) — для выпадов
+  _AngleResult _fastKneeAngleMin(Pose pose) {
+    final leftRes = pose.landmarks[PoseLandmarkType.leftHip];
+    final leftK = pose.landmarks[PoseLandmarkType.leftKnee];
+    final leftA = pose.landmarks[PoseLandmarkType.leftAnkle];
+    final rightH = pose.landmarks[PoseLandmarkType.rightHip];
+    final rightK = pose.landmarks[PoseLandmarkType.rightKnee];
+    final rightA = pose.landmarks[PoseLandmarkType.rightAnkle];
+    double? leftAngle;
+    double? rightAngle;
+    double leftConf = 0, rightConf = 0;
+    if (leftRes != null && leftK != null && leftA != null) {
+      leftAngle = _quickAngle(leftRes, leftK, leftA);
+      leftConf = (leftRes.likelihood + leftK.likelihood + leftA.likelihood) / 3;
+    }
+    if (rightH != null && rightK != null && rightA != null) {
+      rightAngle = _quickAngle(rightH, rightK, rightA);
+      rightConf = (rightH.likelihood + rightK.likelihood + rightA.likelihood) / 3;
+    }
+    if (leftAngle != null && rightAngle != null && (leftConf > _minConfidence || rightConf > _minConfidence)) {
+      final minAngle = math.min(leftAngle, rightAngle);
+      return _AngleResult(
+        angle: minAngle,
+        confidence: (leftConf + rightConf) / 2,
+        isValid: true,
+        feedback: 'OK',
+      );
+    }
+    if (leftAngle != null && leftConf > _minConfidence) {
+      return _AngleResult(angle: leftAngle!, confidence: leftConf, isValid: true, feedback: 'OK');
+    }
+    if (rightAngle != null && rightConf > _minConfidence) {
+      return _AngleResult(angle: rightAngle!, confidence: rightConf, isValid: true, feedback: 'OK');
+    }
+    return _AngleResult(angle: 0, confidence: 0, isValid: false, feedback: 'Ноги не видны');
+  }
+
+  /// Разведение рук (расстояние между запястьями + высота) — для прыжков «ножницы»
+  _AngleResult _fastJumpingJackSpread(Pose pose) {
+    final leftW = pose.landmarks[PoseLandmarkType.leftWrist];
+    final rightW = pose.landmarks[PoseLandmarkType.rightWrist];
+    final leftS = pose.landmarks[PoseLandmarkType.leftShoulder];
+    final rightS = pose.landmarks[PoseLandmarkType.rightShoulder];
+    if (leftW == null || rightW == null || leftS == null || rightS == null) {
+      return _AngleResult(angle: 0, confidence: 0, isValid: false, feedback: 'Руки не видны');
+    }
+    final horiz = math.sqrt(math.pow(leftW.x - rightW.x, 2) + math.pow(leftW.y - rightW.y, 2));
+    final avgY = (leftW.y + rightW.y) / 2;
+    final avgSy = (leftS.y + rightS.y) / 2;
+    final vertSpread = (avgSy - avgY).abs();
+    final spread = (horiz * 80 + vertSpread * 50).clamp(0.0, 100.0);
+    final conf = (leftW.likelihood + rightW.likelihood + leftS.likelihood + rightS.likelihood) / 4;
+    return _AngleResult(
+      angle: spread,
+      confidence: conf,
+      isValid: conf > _minConfidence,
+      feedback: 'OK',
+    );
   }
   
   /// Быстрый расчет угла в плече
@@ -632,6 +1022,8 @@ class ImprovedRepCounter {
         return isInDown ? 'Отжимайтесь вверх! 🔺' : 'Опускайтесь ниже! 🔻';
       case JointType.shoulder:
         return isInDown ? 'Поднимайте руки! 🙌' : 'Разводите руки шире! 👐';
+      case JointType.hip:
+        return isInDown ? 'Поднимайтесь! 🔺' : 'Опускайтесь ниже! 🔻';
     }
   }
   
@@ -722,6 +1114,7 @@ enum JointType {
   knee,
   elbow,
   shoulder,
+  hip,
 }
 
 /// Результат вычисления угла

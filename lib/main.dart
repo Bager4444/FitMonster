@@ -6,6 +6,7 @@ import 'package:fitmonster/core/theme/app_theme.dart';
 import 'package:fitmonster/core/theme/theme_provider.dart';
 import 'package:fitmonster/core/constants/app_constants.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/core/services/connectivity_service.dart';
 import 'package:fitmonster/features/diet/data/services/database_init_service.dart';
 import 'package:fitmonster/features/diet/data/services/food_database_service.dart';
@@ -20,6 +21,13 @@ void main() async {
   // Инициализация Hive
   await Hive.initFlutter();
   await HiveService.initialize();
+
+  // Пользователь для профиля и тренировок
+  final auth = AuthService();
+  await auth.restoreSession();
+  if (!auth.isAuthenticated) {
+    await auth.createUser();
+  }
   
   // Миграция: очистить старые продукты и перейти на загрузку из JSON (один раз)
   final initService = DatabaseInitService();

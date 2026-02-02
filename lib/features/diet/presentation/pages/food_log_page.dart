@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
+import 'package:fitmonster/core/services/stats_service.dart';
 import 'package:fitmonster/features/diet/domain/models/food_log.dart';
 import 'package:fitmonster/features/diet/domain/services/calorie_calculator.dart';
 import 'package:fitmonster/features/diet/domain/services/diet_service.dart';
@@ -292,6 +294,12 @@ class _FoodLogPageState extends State<FoodLogPage> {
         mealType: mealType ?? MealType.breakfast,
         onAdd: (log) async {
           await DietService.addFoodLog(log);
+          final userId = AuthService().currentUserId;
+          if (userId != null) {
+            try {
+              await StatsService().updateDietLogStreak(userId);
+            } catch (_) {}
+          }
           await _loadLogs();
           
           if (mounted) {

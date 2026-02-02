@@ -55,7 +55,6 @@ class PosePainter extends CustomPainter {
 
     for (final pose in poses) {
       final landmarks = pose.landmarks;
-      print('🎨 Drawing pose with ${landmarks.length} landmarks');
       
       // Рисуем соединения (линии скелета) используя типы landmarks
       _drawConnection(canvas, landmarks, PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, linePaint, size);

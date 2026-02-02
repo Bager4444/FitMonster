@@ -158,6 +158,23 @@ class WorkoutService {
     }
   }
 
+  /// Даты с завершёнными тренировками за последние [days] дней (для стрик-календаря)
+  Future<Set<DateTime>> getWorkoutDatesLastNDays(String userId, int days) async {
+    final workouts = await getUserWorkouts(userId);
+    final completed = workouts.where((w) => w.status == WorkoutStatus.completed);
+    final now = DateTime.now();
+    final from = now.subtract(Duration(days: days));
+    final dates = <DateTime>{};
+    for (final w in completed) {
+      if (w.endTime != null && w.endTime!.isAfter(from)) {
+        dates.add(DateTime(w.endTime!.year, w.endTime!.month, w.endTime!.day));
+      } else if (w.startTime.isAfter(from)) {
+        dates.add(DateTime(w.startTime.year, w.startTime.month, w.startTime.day));
+      }
+    }
+    return dates;
+  }
+
   /// Получает статистику тренировок
   Future<Map<String, dynamic>> getWorkoutStats(String userId) async {
     final workouts = await getUserWorkouts(userId);

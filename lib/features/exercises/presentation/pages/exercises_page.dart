@@ -22,6 +22,8 @@ class _ExercisesPageState extends State<ExercisesPage>
   late Animation<double> _fadeAnimation;
   
   String _selectedCategory = 'Все';
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
   final List<String> _categories = [
     'Все',
     'Кардио',
@@ -52,6 +54,7 @@ class _ExercisesPageState extends State<ExercisesPage>
   @override
   void dispose() {
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -253,6 +256,8 @@ class _ExercisesPageState extends State<ExercisesPage>
           ],
         ),
         child: TextField(
+          controller: _searchController,
+          onChanged: (value) => setState(() => _searchQuery = value),
           style: TextStyle(
             color: themeProvider.inputTextColor,
             fontSize: 15,
@@ -427,16 +432,11 @@ class _ExercisesPageState extends State<ExercisesPage>
             ),
           ),
           const SizedBox(height: 0),
-          FutureBuilder<List<Exercise>>(
-            future: Future.value(ExercisesDatabase.getAllExercises()),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(color: themeProvider.accentColor),
-                );
-              }
-
-              final exercises = snapshot.data ?? [];
+          Builder(
+            builder: (context) {
+              final exercises = _searchQuery.trim().isEmpty
+                  ? ExercisesDatabase.getAllExercises()
+                  : ExercisesDatabase.searchExercises(_searchQuery.trim());
               final filteredExercises = _selectedCategory == 'Все'
                   ? exercises
                   : exercises.where((e) => ExerciseColors.getCategoryForExercise(e.id) == _selectedCategory).toList();

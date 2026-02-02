@@ -1,11 +1,12 @@
 /// Модель статистики пользователя
 class UserStats {
-  final int workoutStreak; // Дней подряд
+  final int workoutStreak; // Дней подряд (тренировка или еда)
   final int totalWorkouts; // Всего тренировок
   final double? currentWeight; // Текущий вес
   final double? targetWeight; // Целевой вес
   final int totalCalories; // Калории за неделю
   final DateTime lastWorkoutDate; // Последняя тренировка
+  final DateTime? lastDietLogDate; // Последнее занесение еды в дневник
 
   UserStats({
     this.workoutStreak = 0,
@@ -14,7 +15,15 @@ class UserStats {
     this.targetWeight,
     this.totalCalories = 0,
     DateTime? lastWorkoutDate,
+    this.lastDietLogDate,
   }) : lastWorkoutDate = lastWorkoutDate ?? DateTime.now();
+
+  /// Последняя активность (тренировка или еда) — для расчёта стрика
+  DateTime get lastActivityDate {
+    final diet = lastDietLogDate;
+    if (diet == null) return lastWorkoutDate;
+    return diet.isAfter(lastWorkoutDate) ? diet : lastWorkoutDate;
+  }
 
   /// Создать из Map (для Firestore/Hive)
   factory UserStats.fromMap(Map<String, dynamic> map) {
@@ -27,6 +36,9 @@ class UserStats {
       lastWorkoutDate: map['lastWorkoutDate'] != null
           ? DateTime.parse(map['lastWorkoutDate'])
           : DateTime.now(),
+      lastDietLogDate: map['lastDietLogDate'] != null
+          ? DateTime.parse(map['lastDietLogDate'])
+          : null,
     );
   }
 
@@ -39,6 +51,7 @@ class UserStats {
       'targetWeight': targetWeight,
       'totalCalories': totalCalories,
       'lastWorkoutDate': lastWorkoutDate.toIso8601String(),
+      if (lastDietLogDate != null) 'lastDietLogDate': lastDietLogDate!.toIso8601String(),
     };
   }
 
@@ -50,6 +63,7 @@ class UserStats {
     double? targetWeight,
     int? totalCalories,
     DateTime? lastWorkoutDate,
+    DateTime? lastDietLogDate,
   }) {
     return UserStats(
       workoutStreak: workoutStreak ?? this.workoutStreak,
@@ -58,6 +72,7 @@ class UserStats {
       targetWeight: targetWeight ?? this.targetWeight,
       totalCalories: totalCalories ?? this.totalCalories,
       lastWorkoutDate: lastWorkoutDate ?? this.lastWorkoutDate,
+      lastDietLogDate: lastDietLogDate ?? this.lastDietLogDate,
     );
   }
 }
