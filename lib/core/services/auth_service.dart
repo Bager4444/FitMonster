@@ -1,117 +1,204 @@
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
 
-/// Сервис аутентификации: локальный пользователь и вход через Google
+/// Результат регистрации
+class AuthResult {
+  final bool success;
+  final String? message;
+  final bool emailVerificationSent;
+
+  const AuthResult({
+    required this.success,
+    this.message,
+    this.emailVerificationSent = false,
+  });
+}
+
+/// Сервис аутентификации: гость (локально) или почта/пароль через Firebase с проверкой почты
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   String? _currentUserId;
 
-  /// Текущий ID пользователя (локальный или google_xxx)
+  /// Текущий ID пользователя (локальный user_xxx или firebase_uid)
   String? get currentUserId => _currentUserId;
 
-  /// Вошёл ли пользователь через Google
-  bool get isGoogleUser =>
-      _currentUserId != null && _currentUserId!.startsWith('google_');
+  /// Вошёл ли пользователь по почте (Firebase)
+  bool get isEmailUser =>
+      _currentUserId != null && _currentUserId!.startsWith('firebase_');
 
-  /// Email от Google (если вошли через Google)
-  String? get googleEmail =>
-      HiveService.get(box: HiveService.settingsBox, key: 'google_email') as String?;
+  /// Email текущего пользователя (если вошёл по почте)
+  String? get currentUserEmail => _firebaseAuth.currentUser?.email;
 
-  /// Имя/фамилия от Google (если вошли через Google)
-  String? get googleDisplayName =>
-      HiveService.get(box: HiveService.settingsBox, key: 'google_display_name') as String?;
+  /// Подтверждена ли почта у текущего пользователя
+  bool get isEmailVerified => _firebaseAuth.currentUser?.emailVerified ?? false;
 
   /// Авторизован ли пользователь
   bool get isAuthenticated => _currentUserId != null;
 
-  /// Вход через Google
-  /// Возвращает true при успехе, false при отмене или ошибке
-  Future<bool> signInWithGoogle() async {
+  /// Регистрация по почте и паролю. Отправляет письмо для подтверждения почты.
+  Future<AuthResult> registerWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
     try {
-      final account = await _googleSignIn.signIn();
-      if (account == null) return false;
-
-      final userId = 'google_${account.id}';
-      _currentUserId = userId;
-
-      await HiveService.put(
-        box: HiveService.settingsBox,
-        key: 'current_user_id',
-        value: userId,
+      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
       );
-      await HiveService.put(
-        box: HiveService.settingsBox,
-        key: 'google_email',
-        value: account.email ?? '',
+      if (credential.user == null) {
+        return const AuthResult(success: false, message: 'Ошибка создания аккаунта');
+      }
+      await credential.user!.sendEmailVerification();
+      _currentUserId = 'firebase_${credential.user!.uid}';
+      await _saveSession();
+      return const AuthResult(
+        success: true,
+        emailVerificationSent: true,
+        message: 'На вашу почту отправлено письмо для подтверждения',
       );
-      await HiveService.put(
-        box: HiveService.settingsBox,
-        key: 'google_display_name',
-        value: account.displayName ?? '',
-      );
-
-      return true;
-    } catch (_) {
-      return false;
+    } on FirebaseAuthException catch (e) {
+      String msg = 'Ошибка регистрации';
+      switch (e.code) {
+        case 'email-already-in-use':
+          msg = 'Эта почта уже зарегистрирована';
+          break;
+        case 'invalid-email':
+          msg = 'Некорректный адрес почты';
+          break;
+        case 'weak-password':
+          msg = 'Пароль должен быть не короче 6 символов';
+          break;
+        default:
+          msg = e.message ?? msg;
+      }
+      return AuthResult(success: false, message: msg);
+    } catch (e) {
+      return AuthResult(success: false, message: e.toString());
     }
   }
 
-  /// Войти по ID (локальный пользователь)
-  Future<void> signIn(String userId) async {
-    _currentUserId = userId;
-    await HiveService.put(
-      box: HiveService.settingsBox,
-      key: 'current_user_id',
-      value: userId,
-    );
+  /// Вход по почте и паролю
+  Future<AuthResult> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      if (credential.user == null) {
+        return const AuthResult(success: false, message: 'Ошибка входа');
+      }
+      _currentUserId = 'firebase_${credential.user!.uid}';
+      await _saveSession();
+      return const AuthResult(success: true);
+    } on FirebaseAuthException catch (e) {
+      String msg = 'Ошибка входа';
+      switch (e.code) {
+        case 'user-not-found':
+        case 'wrong-password':
+        case 'invalid-credential':
+          msg = 'Неверная почта или пароль';
+          break;
+        case 'invalid-email':
+          msg = 'Некорректный адрес почты';
+          break;
+        case 'user-disabled':
+          msg = 'Аккаунт отключён';
+          break;
+        default:
+          msg = e.message ?? msg;
+      }
+      return AuthResult(success: false, message: msg);
+    } catch (e) {
+      return AuthResult(success: false, message: e.toString());
+    }
   }
 
-  /// Выйти из системы (в т.ч. из Google). После выхода создаётся гость.
+  /// Повторно отправить письмо для подтверждения почты
+  Future<AuthResult> sendEmailVerification() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      return const AuthResult(success: false, message: 'Сначала войдите в аккаунт');
+    }
+    if (user.emailVerified) {
+      return const AuthResult(success: true, message: 'Почта уже подтверждена');
+    }
+    try {
+      await user.sendEmailVerification();
+      return AuthResult(
+        success: true,
+        emailVerificationSent: true,
+        message: 'Письмо отправлено на ${user.email}',
+      );
+    } on FirebaseAuthException catch (e) {
+      String msg = 'Ошибка отправки';
+      if (e.code == 'too-many-requests') {
+        msg = 'Письмо уже отправлялось недавно. Подождите 2 минуты и нажмите «Отправить письмо снова».';
+      } else {
+        msg = e.message ?? msg;
+      }
+      return AuthResult(success: false, message: msg);
+    }
+  }
+
+  /// Обновить данные пользователя с сервера (в т.ч. emailVerified)
+  Future<void> reloadUser() async {
+    await _firebaseAuth.currentUser?.reload();
+  }
+
+  /// Сохранить сессию в Hive
+  Future<void> _saveSession() async {
+    if (_currentUserId != null) {
+      await HiveService.put(
+        box: HiveService.settingsBox,
+        key: 'current_user_id',
+        value: _currentUserId,
+      );
+    }
+  }
+
+  /// Войти как локальный пользователь (гость)
+  Future<void> signIn(String userId) async {
+    _currentUserId = userId;
+    await _saveSession();
+  }
+
+  /// Выйти. Если был вход по почте — после выхода создаётся гость.
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    await _firebaseAuth.signOut();
     _currentUserId = null;
     await HiveService.delete(
       box: HiveService.settingsBox,
       key: 'current_user_id',
-    );
-    await HiveService.delete(
-      box: HiveService.settingsBox,
-      key: 'google_email',
-    );
-    await HiveService.delete(
-      box: HiveService.settingsBox,
-      key: 'google_display_name',
     );
     await createUser();
   }
 
   /// Восстановить сессию при запуске приложения
   Future<void> restoreSession() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      _currentUserId = 'firebase_${user.uid}';
+      await _saveSession();
+      return;
+    }
     final savedUserId = HiveService.get(
       box: HiveService.settingsBox,
       key: 'current_user_id',
     ) as String?;
-
     if (savedUserId != null) {
       _currentUserId = savedUserId;
-      if (isGoogleUser) {
-        try {
-          await _googleSignIn.signInSilently();
-        } catch (_) {
-          // Сессия Google истекла — пользователь остаётся с тем же userId
-        }
-      }
     }
   }
 
-  /// Создать локального пользователя (гость, без Google)
+  /// Создать гостевого пользователя (локально)
   Future<String> createUser() async {
     final userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
     await signIn(userId);

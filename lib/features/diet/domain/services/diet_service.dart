@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/features/diet/domain/models/user_profile.dart';
 import 'package:fitmonster/features/diet/domain/models/food_log.dart';
 
@@ -7,10 +8,9 @@ class DietService {
   static const String _profileBoxName = 'user_profile';
   static const String _foodLogsBoxName = 'food_logs';
 
-  /// Получить ID текущего пользователя (локальная реализация)
+  /// ID текущего пользователя — данные привязаны к аккаунту
   static String _getCurrentUserId() {
-    // Используем фиксированный ID для локального пользователя
-    return 'local_user';
+    return AuthService().currentUserId ?? 'local_user';
   }
 
   /// Сохранить профиль пользователя

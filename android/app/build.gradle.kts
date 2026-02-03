@@ -44,3 +44,6 @@ android {
 flutter {
     source = "../.."
 }
+
+// Firebase (google-services.json в android/app/)
+apply(plugin = "com.google.gms.google-services")

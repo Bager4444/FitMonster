@@ -30,8 +30,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   
-  # Google Sign-In
-  google_sign_in: ^7.2.0
+  # Firebase Auth (почта + пароль, проверка почты)
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.3
   
   # Apple Sign-In (только для iOS)
   # sign_in_with_apple: ^5.0.0

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fitmonster/features/diet/domain/models/food_item.dart';
 import 'package:fitmonster/features/diet/data/services/food_database_service.dart';
 import 'package:fitmonster/core/theme/app_theme.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
 
 /// Страница деталей продукта
 class FoodDetailPage extends StatefulWidget {
@@ -24,7 +25,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   bool _isLoading = true;
   bool _isFavorite = false;
 
-  static const String _userId = 'local_user';
+  String get _userId => AuthService().currentUserId ?? 'local_user';
 
   @override
   void initState() {

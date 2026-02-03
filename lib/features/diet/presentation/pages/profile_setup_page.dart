@@ -5,6 +5,7 @@ import 'package:fitmonster/features/diet/domain/services/diet_service.dart';
 import 'package:fitmonster/core/widgets/custom_text_field.dart';
 import 'package:fitmonster/core/widgets/custom_button.dart';
 import 'package:fitmonster/core/theme/app_theme.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
 
 /// Экран настройки профиля для расчета калорий
 class ProfileSetupPage extends StatefulWidget {
@@ -68,7 +69,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
     // Получить текущий профиль для проверки изменений
     final existingProfile = await DietService.getUserProfile();
-    final userId = 'local_user'; // Используем local_user ID пока Firebase не настроен
+    final userId = AuthService().currentUserId ?? 'local_user';
 
     final profile = UserProfile(
       userId: userId,

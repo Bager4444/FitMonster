@@ -12,6 +12,7 @@ import 'package:fitmonster/features/diet/presentation/pages/barcode_scanner_page
 import 'package:fitmonster/core/widgets/custom_text_field.dart';
 import 'package:fitmonster/core/widgets/custom_button.dart';
 import 'package:fitmonster/core/theme/app_theme.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
 
 /// Диалог добавления продукта
 class AddFoodDialog extends StatefulWidget {
@@ -45,7 +46,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
   bool _isOffline = false; // Индикатор офлайн-режима
   Timer? _searchDebounce;
 
-  static const String _userId = 'local_user';
+  String get _userId => AuthService().currentUserId ?? 'local_user';
 
   @override
   void initState() {
@@ -282,9 +283,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       return;
     }
 
-    // Получить текущего пользователя (локальная реализация)
-    const userId = 'local_user';
-
+    final userId = _userId;
     final log = FoodLog.fromFood(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       userId: userId,

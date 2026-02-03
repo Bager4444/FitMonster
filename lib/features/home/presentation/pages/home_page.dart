@@ -19,12 +19,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
-  // Используем IndexedStack для сохранения состояния вкладок
-  final List<Widget> _pages = const [
-    ExercisesPage(),
-    WorkoutComplexesPage(),
-    DietPage(),
-    ProfilePage(),
+  List<Widget> _buildPages() => [
+    const ExercisesPage(),
+    const WorkoutComplexesPage(),
+    const DietPage(),
+    ProfilePage(isCurrentTab: _currentIndex == 3),
   ];
 
   @override
@@ -48,7 +47,7 @@ class _HomePageState extends State<HomePage> {
             ),
             child: IndexedStack(
               index: _currentIndex,
-              children: _pages,
+              children: _buildPages(),
             ),
           ),
           bottomNavigationBar: Container(
