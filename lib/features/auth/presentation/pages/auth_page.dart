@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:fitmonster/core/theme/theme_provider.dart';
+import 'package:flutter/services.dart';
+import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
+import 'package:fitmonster/core/app_navigator.dart';
 
-/// Экран входа и регистрации по почте и паролю с проверкой почты
+/// Экран входа и регистрации: Deep Blue фон, glass-поля, кнопка с градиентом.
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
 
@@ -36,31 +37,21 @@ class _AuthPageState extends State<AuthPage> {
   );
 
   String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Введите почту';
-    }
-    if (!_emailRegex.hasMatch(value.trim())) {
-      return 'Некорректный адрес почты';
-    }
+    if (value == null || value.trim().isEmpty) return 'Введите почту';
+    if (!_emailRegex.hasMatch(value.trim())) return 'Некорректный адрес почты';
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Введите пароль';
-    }
-    if (value.length < 6) {
-      return 'Пароль не короче 6 символов';
-    }
+    if (value == null || value.isEmpty) return 'Введите пароль';
+    if (value.length < 6) return 'Пароль не короче 6 символов';
     return null;
   }
 
   String? _validateConfirm(String? value) {
     final p = _validatePassword(value);
     if (p != null) return p;
-    if (value != _passwordController.text) {
-      return 'Пароли не совпадают';
-    }
+    if (value != _passwordController.text) return 'Пароли не совпадают';
     return null;
   }
 
@@ -103,9 +94,8 @@ class _AuthPageState extends State<AuthPage> {
         );
       }
       if (mounted) {
-        Navigator.of(context).pop({
-          'success': true,
-          'verificationSent': result.emailVerificationSent,
+        Future.delayed(const Duration(milliseconds: 100), () {
+          appNavigatorKey.currentState?.pop<bool>(true);
         });
       }
     } else {
@@ -118,175 +108,100 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
-  Future<void> _resendVerification() async {
-    setState(() => _loading = true);
-    final result = await _auth.sendEmailVerification();
-    setState(() => _loading = false);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message ?? (result.success ? 'Отправлено' : 'Ошибка')),
-        backgroundColor: result.success ? Colors.green : Colors.red,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) {
-        final isDark = themeProvider.isDarkMode;
-        final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-        final cardColor = isDark
-            ? const Color(0xFF1E293B).withValues(alpha: 0.8)
-            : Colors.white.withValues(alpha: 0.95);
-
-        return Scaffold(
-          body: Container(
-            decoration: BoxDecoration(gradient: themeProvider.currentGradient),
-            child: SafeArea(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+      body: Stack(
+        children: [
+          GlassTheme.buildScaffoldBackground(),
+          SafeArea(
+            child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Form(
                   key: _formKey,
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
                         _isRegister ? 'Регистрация' : 'Вход',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
+                        style: GlassTheme.titleStyle.copyWith(fontSize: 28),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _isRegister
                             ? 'Создайте аккаунт. На почту придёт ссылка для подтверждения.'
                             : 'Войдите по почте и паролю',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: textColor.withValues(alpha: 0.8),
-                        ),
+                        style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
                       ),
                       const SizedBox(height: 32),
-
-                      TextFormField(
+                      _buildGlassField(
                         controller: _emailController,
+                        label: 'Почта',
+                        hint: 'example@mail.ru',
                         keyboardType: TextInputType.emailAddress,
-                        autocorrect: false,
-                        decoration: InputDecoration(
-                          labelText: 'Почта',
-                          hintText: 'example@mail.ru',
-                          filled: true,
-                          fillColor: cardColor,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          prefixIcon: const Icon(Icons.email_outlined),
-                        ),
+                        prefixIcon: Icons.email_outlined,
                         validator: _validateEmail,
                       ),
                       const SizedBox(height: 16),
-
-                      TextFormField(
+                      _buildGlassField(
                         controller: _passwordController,
+                        label: 'Пароль',
+                        hint: 'Не короче 6 символов',
                         obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Пароль',
-                          hintText: 'Не короче 6 символов',
-                          filled: true,
-                          fillColor: cardColor,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        prefixIcon: Icons.lock_outline,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            color: GlassTheme.textSecondary,
                           ),
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                            ),
-                            onPressed: () =>
-                                setState(() => _obscurePassword = !_obscurePassword),
-                          ),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                         validator: _validatePassword,
                       ),
-
                       if (_isRegister) ...[
                         const SizedBox(height: 16),
-                        TextFormField(
+                        _buildGlassField(
                           controller: _confirmPasswordController,
+                          label: 'Повторите пароль',
+                          hint: 'Повторите пароль',
                           obscureText: _obscureConfirm,
-                          decoration: InputDecoration(
-                            labelText: 'Повторите пароль',
-                            filled: true,
-                            fillColor: cardColor,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          prefixIcon: Icons.lock_outline,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                              color: GlassTheme.textSecondary,
                             ),
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscureConfirm
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
-                              onPressed: () => setState(
-                                  () => _obscureConfirm = !_obscureConfirm),
-                            ),
+                            onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                           ),
                           validator: _validateConfirm,
                         ),
                       ],
-
                       const SizedBox(height: 24),
-
-                      FilledButton(
-                        onPressed: _loading ? null : _submit,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: const Color(0xFFFF9600),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: _loading
-                            ? const SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(_isRegister ? 'Зарегистрироваться' : 'Войти'),
-                      ),
-
+                      _buildGradientButton(),
                       const SizedBox(height: 16),
-
                       TextButton(
-                        onPressed: _loading
-                            ? null
-                            : () => setState(() => _isRegister = !_isRegister),
+                        onPressed: _loading ? null : () => setState(() => _isRegister = !_isRegister),
                         child: Text(
-                          _isRegister
-                              ? 'Уже есть аккаунт? Войти'
-                              : 'Нет аккаунта? Зарегистрироваться',
-                          style: TextStyle(color: textColor),
+                          _isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться',
+                          style: const TextStyle(color: GlassTheme.textPrimary),
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
                       OutlinedButton(
                         onPressed: _loading
                             ? null
-                            : () => Navigator.of(context).pop(false),
+                            : () {
+                                Future.delayed(const Duration(milliseconds: 100), () {
+                                  appNavigatorKey.currentState?.pop<bool>(false);
+                                });
+                              },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: textColor,
-                          side: BorderSide(color: textColor.withValues(alpha: 0.5)),
+                          foregroundColor: GlassTheme.textPrimary,
+                          side: BorderSide(color: Colors.white.withOpacity(0.5)),
                         ),
                         child: const Text('Продолжить как гость'),
                       ),
@@ -296,8 +211,99 @@ class _AuthPageState extends State<AuthPage> {
               ),
             ),
           ),
-        );
-      },
+        ],
+      ),
+    ),
+    );
+  }
+
+  Widget _buildGlassField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required String? Function(String?) validator,
+    IconData? prefixIcon,
+    Widget? suffixIcon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      autocorrect: false,
+      obscureText: obscureText,
+      style: const TextStyle(color: GlassTheme.textPrimary),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(color: GlassTheme.textSecondary),
+        hintStyle: const TextStyle(color: GlassTheme.textSecondary),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.1),
+        prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: GlassTheme.textSecondary, size: 22) : null,
+        suffixIcon: suffixIcon,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: const BorderSide(color: GlassTheme.glowCyan, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: const BorderSide(color: Colors.redAccent),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      ),
+      validator: validator,
+    );
+  }
+
+  Widget _buildGradientButton() {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        gradient: GlassTheme.primaryButtonGradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: GlassTheme.glowCyan.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _loading ? null : _submit,
+          borderRadius: BorderRadius.circular(24),
+          child: Center(
+            child: _loading
+                ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    _isRegister ? 'Зарегистрироваться' : 'Войти',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+          ),
+        ),
+      ),
     );
   }
 }

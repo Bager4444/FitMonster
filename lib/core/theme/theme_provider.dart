@@ -32,18 +32,14 @@ class ThemeProvider extends ChangeNotifier {
     stops: const [0.0, 0.3, 0.6, 0.8, 1.0],
   );
 
-  /// Ночной градиент: создается через RadialGradient для избежания полосок
-  Gradient get darkGradient => RadialGradient(
-    center: Alignment.topCenter,
-    radius: 1.5,
+  /// Deep Blue градиент (glassmorphism)
+  Gradient get darkGradient => const LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
     colors: [
-      const Color(0xFF1E3A8A), // Насыщенно синий в центре
-      const Color(0xFF1E40AF), // Синий
-      const Color(0xFF1E293B), // Темно-синий
-      const Color(0xFF0F172A), // Очень темно-синий
-      Colors.black,             // Черный по краям
+      Color(0xFF2979FF),
+      Color(0xFF0D1B2A),
     ],
-    stops: const [0.0, 0.3, 0.6, 0.8, 1.0],
   );
 
   /// Текущий градиент в зависимости от темы

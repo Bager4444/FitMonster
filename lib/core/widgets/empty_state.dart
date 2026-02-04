@@ -7,6 +7,8 @@ class EmptyState extends StatelessWidget {
   final String message;
   final String? actionText;
   final VoidCallback? onAction;
+  final Color? actionButtonColor;
+  final Color? actionButtonTextColor;
 
   const EmptyState({
     super.key,
@@ -15,6 +17,8 @@ class EmptyState extends StatelessWidget {
     required this.message,
     this.actionText,
     this.onAction,
+    this.actionButtonColor,
+    this.actionButtonTextColor,
   });
 
   @override
@@ -48,6 +52,12 @@ class EmptyState extends StatelessWidget {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: onAction,
+                style: actionButtonColor != null || actionButtonTextColor != null
+                    ? ElevatedButton.styleFrom(
+                        backgroundColor: actionButtonColor,
+                        foregroundColor: actionButtonTextColor ?? (actionButtonColor != null ? Colors.white : null),
+                      )
+                    : null,
                 child: Text(actionText!),
               ),
             ],

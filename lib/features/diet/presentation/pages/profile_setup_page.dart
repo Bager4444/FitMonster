@@ -5,6 +5,7 @@ import 'package:fitmonster/features/diet/domain/services/diet_service.dart';
 import 'package:fitmonster/core/widgets/custom_text_field.dart';
 import 'package:fitmonster/core/widgets/custom_button.dart';
 import 'package:fitmonster/core/theme/app_theme.dart';
+import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
 
 /// Экран настройки профиля для расчета калорий
@@ -164,7 +165,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 subtitle: _goal.description,
                 description: 'Рекомендуемое количество калорий в день для достижения вашей цели',
                 icon: Icons.flag,
-                color: AppTheme.primaryGreen,
+                color: GlassTheme.glowCyan,
               ),
               const SizedBox(height: 24),
 
@@ -268,7 +269,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     messenger.showSnackBar(
                       const SnackBar(
                         content: Text('Профиль сохранен!'),
-                        backgroundColor: AppTheme.primaryGreen,
+                        backgroundColor: GlassTheme.glowCyan,
                       ),
                     );
                   }
@@ -286,7 +287,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       case BMICategory.underweight:
         return Colors.blue;
       case BMICategory.normal:
-        return AppTheme.primaryGreen;
+        return GlassTheme.glowCyan;
       case BMICategory.overweight:
         return Colors.orange;
       case BMICategory.obese:
@@ -297,67 +298,110 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: GlassTheme.scaffoldGradient,
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(color: GlassTheme.glowCyan),
+          ),
+        ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Настройка профиля'),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          primary: GlassTheme.glowCyan,
+          surface: Colors.transparent,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          labelStyle: const TextStyle(color: GlassTheme.textPrimary),
+          hintStyle: const TextStyle(color: GlassTheme.textSecondary),
+          floatingLabelStyle: const TextStyle(color: GlassTheme.glowCyan),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.1),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: GlassTheme.glowCyan),
+          ),
+        ),
+        textTheme: Theme.of(context).textTheme.copyWith(
+          titleMedium: GlassTheme.titleStyle.copyWith(fontSize: 16),
+          bodyMedium: GlassTheme.bodyStyle,
+          bodyLarge: GlassTheme.bodyStyle,
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Расскажите о себе',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Эти данные помогут рассчитать вашу норму калорий',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Информационная подсказка
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.primaryGreen.withOpacity(0.3),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(
+            'Настройка профиля',
+            style: GlassTheme.titleStyle.copyWith(fontSize: 20),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: GlassTheme.textPrimary),
+        ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: GlassTheme.scaffoldGradient,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Расскажите о себе',
+                    style: GlassTheme.titleStyle.copyWith(fontSize: 24),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppTheme.primaryGreen,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Мы используем научно обоснованную формулу Mifflin-St Jeor для точного расчета калорий',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[700],
-                            ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Эти данные помогут рассчитать вашу норму калорий',
+                    style: GlassTheme.bodyStyle,
+                  ),
+                  const SizedBox(height: 16),
+                  // Информационная подсказка
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: GlassTheme.glowCyan,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Мы используем научно обоснованную формулу Mifflin-St Jeor для точного расчета калорий',
+                            style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
 
-              // Возраст
+                  // Возраст
               CustomTextField(
                 label: 'Возраст',
                 hint: 'Введите ваш возраст',
@@ -420,10 +464,17 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               // Пол
               Text(
                 'Пол',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: GlassTheme.titleStyle.copyWith(fontSize: 16),
               ),
               const SizedBox(height: 8),
               SegmentedButton<Gender>(
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: Colors.white.withOpacity(0.15),
+                  foregroundColor: GlassTheme.textPrimary,
+                  selectedBackgroundColor: GlassTheme.gradientTop,
+                  selectedForegroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                ),
                 segments: const [
                   ButtonSegment(
                     value: Gender.male,
@@ -448,11 +499,15 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               // Уровень активности
               Text(
                 'Уровень активности',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: GlassTheme.titleStyle.copyWith(fontSize: 16),
               ),
               const SizedBox(height: 8),
               ...ActivityLevel.values.map((level) => RadioListTile<ActivityLevel>(
-                    title: Text(level.description),
+                    activeColor: GlassTheme.gradientTop,
+                    title: Text(
+                      level.description,
+                      style: GlassTheme.bodyStyle,
+                    ),
                     value: level,
                     groupValue: _activityLevel,
                     onChanged: (value) {
@@ -466,10 +521,17 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               // Цель
               Text(
                 'Ваша цель',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: GlassTheme.titleStyle.copyWith(fontSize: 16),
               ),
               const SizedBox(height: 8),
               SegmentedButton<Goal>(
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: Colors.white.withOpacity(0.15),
+                  foregroundColor: GlassTheme.textPrimary,
+                  selectedBackgroundColor: GlassTheme.gradientTop,
+                  selectedForegroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                ),
                 segments: const [
                   ButtonSegment(
                     value: Goal.lose,
@@ -499,12 +561,16 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               CustomButton(
                 text: 'Рассчитать',
                 onPressed: _calculateAndShowResults,
+                backgroundColor: GlassTheme.gradientTop,
+                textColor: Colors.white,
               ),
             ],
           ),
         ),
       ),
-    );
+    ),
+    ),  // Scaffold
+    );  // Theme
   }
 }
 

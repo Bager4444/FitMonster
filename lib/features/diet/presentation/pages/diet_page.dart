@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/core/widgets/empty_state.dart';
 import 'package:fitmonster/features/diet/presentation/pages/profile_setup_page.dart';
 import 'package:fitmonster/features/diet/presentation/pages/food_log_page.dart';
@@ -77,20 +78,26 @@ class _DietPageState extends State<DietPage> {
       return DefaultTabController(
         length: 2,
         child: Scaffold(
+          backgroundColor: Colors.transparent,
           appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight + 40), // Уменьшена высота TabBar
+            preferredSize: const Size.fromHeight(kToolbarHeight + 40),
             child: AppBar(
-              title: const Text('Диета'),
-              automaticallyImplyLeading: false, // Убрать кнопку назад
-              toolbarHeight: kToolbarHeight, // Стандартная высота AppBar
-              bottom: const PreferredSize(
-                preferredSize: Size.fromHeight(40), // Уменьшена высота TabBar
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: const Text('Диета', style: TextStyle(color: GlassTheme.textPrimary, fontWeight: FontWeight.bold)),
+              automaticallyImplyLeading: false,
+              toolbarHeight: kToolbarHeight,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(40),
                 child: TabBar(
-                  tabs: [
+                  labelColor: GlassTheme.glowCyan,
+                  unselectedLabelColor: GlassTheme.textSecondary,
+                  indicatorColor: GlassTheme.glowCyan,
+                  tabs: const [
                     Tab(icon: Icon(Icons.dashboard, size: 20), text: 'Статистика'),
                     Tab(icon: Icon(Icons.restaurant_menu, size: 20), text: 'Дневник'),
                   ],
-                  labelStyle: TextStyle(fontSize: 12),
+                  labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   indicatorSize: TabBarIndicatorSize.tab,
                 ),
               ),
@@ -98,7 +105,7 @@ class _DietPageState extends State<DietPage> {
           ),
           body: TabBarView(
             children: [
-              const DietDashboardPage(),
+              DietDashboardPage(targetMacros: _targetMacros),
               FoodLogPage(
                 key: ValueKey(_profileVersion),
                 date: DateTime.now(),
@@ -114,44 +121,22 @@ class _DietPageState extends State<DietPage> {
     return SafeArea(
       child: Column(
         children: [
-          // AppBar содержимое
           Container(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Диета',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.settings, color: Colors.white),
-                  tooltip: 'Настроить профиль',
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ProfileSetupPage(),
-                      ),
-                    );
-                    _loadProfile();
-                  },
-                ),
-              ],
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Диета',
+              style: GlassTheme.titleStyle.copyWith(fontSize: 24),
             ),
           ),
-          
-          // Основное содержимое
           Expanded(
             child: EmptyState(
               icon: Icons.restaurant,
               title: 'Журнал питания пуст',
               message: 'Сначала настройте профиль для расчета калорий',
               actionText: 'Настроить профиль',
+              actionButtonColor: GlassTheme.glowCyan,
+              actionButtonTextColor: Colors.black,
               onAction: () async {
                 await Navigator.push(
                   context,
@@ -161,29 +146,6 @@ class _DietPageState extends State<DietPage> {
                 );
                 _loadProfile();
               },
-            ),
-          ),
-          
-          // FloatingActionButton содержимое
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProfileSetupPage(),
-                  ),
-                );
-                _loadProfile();
-              },
-              icon: const Icon(Icons.calculate),
-              label: const Text('Рассчитать калории'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
             ),
           ),
         ],

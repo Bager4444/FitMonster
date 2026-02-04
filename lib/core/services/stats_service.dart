@@ -66,6 +66,7 @@ class StatsService {
       totalWorkouts: stats.totalWorkouts + 1,
       lastWorkoutDate: now,
     ));
+    await markWeekDayActive(userId);
   }
 
   /// Обновить стрик после занесения еды в дневник (общий стрик: тренировка или еда)
@@ -90,6 +91,7 @@ class StatsService {
       workoutStreak: newStreak,
       lastDietLogDate: now,
     ));
+    await markWeekDayActive(userId);
   }
 
   /// Стрик по датам активности: сколько дней подряд до сегодня включительно (для согласованности с календарём)
@@ -121,5 +123,65 @@ class StatsService {
       totalCalories: stats.totalCalories + calories,
     );
     await saveUserStats(userId, updatedStats);
+  }
+
+  // --- Недельная активность (как в Duolingo: Пн–Вс, сброс каждую неделю) ---
+
+  static String _currentWeekKey() {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    return '${monday.year}-${monday.month.toString().padLeft(2, '0')}-${monday.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Отметить сегодня как активный день для текущей недели (тренировка или еда).
+  static Future<void> markWeekDayActive(String userId) async {
+    final weekKey = _currentWeekKey();
+    final weekday = DateTime.now().weekday; // 1 = Пн, 7 = Вс
+    try {
+      final raw = HiveService.get(
+        box: HiveService.userBox,
+        key: 'week_activity_$userId',
+      );
+      List<int> activeDays = [];
+      String? storedKey;
+      if (raw is Map<String, dynamic>) {
+        storedKey = raw['weekKey'] as String?;
+        final list = raw['activeDays'];
+        if (list is List) activeDays = list.map((e) => (e as num).toInt()).toList();
+      }
+      if (storedKey != weekKey) {
+        activeDays = [];
+      }
+      if (!activeDays.contains(weekday)) {
+        activeDays.add(weekday);
+        activeDays.sort();
+      }
+      await HiveService.put(
+        box: HiveService.userBox,
+        key: 'week_activity_$userId',
+        value: {'weekKey': weekKey, 'activeDays': activeDays},
+      );
+    } catch (e) {
+      print('❌ Error marking week day active: $e');
+    }
+  }
+
+  /// Активные дни текущей недели (1=Пн … 7=Вс). Если неделя сменилась — пустой список.
+  static List<int> getWeekActiveDays(String userId) {
+    final weekKey = _currentWeekKey();
+    try {
+      final raw = HiveService.get(
+        box: HiveService.userBox,
+        key: 'week_activity_$userId',
+      );
+      if (raw is! Map<String, dynamic>) return [];
+      final storedKey = raw['weekKey'] as String?;
+      if (storedKey != weekKey) return [];
+      final list = raw['activeDays'];
+      if (list is! List) return [];
+      return list.map((e) => (e as num).toInt()).toList();
+    } catch (e) {
+      return [];
+    }
   }
 }

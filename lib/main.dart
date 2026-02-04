@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:fitmonster/core/theme/app_theme.dart';
 import 'package:fitmonster/core/theme/theme_provider.dart';
 import 'package:fitmonster/core/constants/app_constants.dart';
+import 'package:fitmonster/core/app_navigator.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
@@ -14,6 +15,7 @@ import 'package:fitmonster/features/diet/data/services/food_database_service.dar
 import 'package:fitmonster/features/diet/data/datasources/local_food_datasource.dart';
 import 'package:fitmonster/features/diet/data/repositories/food_repository.dart';
 import 'package:fitmonster/features/home/presentation/pages/home_page.dart';
+import 'package:fitmonster/core/providers/nav_index_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,7 +81,8 @@ class FitMonsterApp extends StatelessWidget {
       providers: [
         // Тема
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        
+        // Индекс вкладки навигации (плавающая капсула)
+        ChangeNotifierProvider(create: (_) => NavIndexProvider()),
         // Сервис подключения к сети
         ChangeNotifierProvider(create: (_) => ConnectivityService()),
         
@@ -92,6 +95,7 @@ class FitMonsterApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
+            navigatorKey: appNavigatorKey,
             title: AppConstants.appName,
             theme: AppTheme.lightTheme,
             home: const HomePage(),

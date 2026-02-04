@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:fitmonster/core/theme/theme_provider.dart';
+import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/features/exercises/domain/models/exercise.dart';
 import 'package:fitmonster/features/exercises/domain/models/workout_complex.dart';
 import 'package:fitmonster/features/exercises/presentation/widgets/pose_painter.dart';
@@ -708,7 +709,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         _startRestTimer(seconds);
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue,
+        backgroundColor: GlassTheme.gradientTop,
         foregroundColor: Colors.white,
       ),
       child: Text(label),
@@ -840,52 +841,63 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return Scaffold(
-          backgroundColor: themeProvider.backgroundColor,
-          appBar: AppBar(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.exercise.nameRu,
-                  style: const TextStyle(fontSize: 18),
-                ),
-                if (widget.complex != null && widget.currentExerciseIndex != null)
-                  Text(
-                    '${widget.currentExerciseIndex! + 1} из ${widget.complex!.exerciseIds.length} • ${widget.complex!.name}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: themeProvider.secondaryTextColor,
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: GlassTheme.scaffoldGradient,
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // AppBar в стиле приложения
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: GlassTheme.textPrimary),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                widget.exercise.nameRu,
+                                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                              ),
+                              if (widget.complex != null && widget.currentExerciseIndex != null)
+                                Text(
+                                  '${widget.currentExerciseIndex! + 1} из ${widget.complex!.exerciseIds.length} • ${widget.complex!.name}',
+                                  style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
-            ),
-            backgroundColor: themeProvider.cardColor,
-            foregroundColor: themeProvider.textColor,
-            actions: [
-              IconButton(
-                icon: Icon(_isWorkoutStarted ? Icons.stop : Icons.play_arrow),
-                onPressed: _isWorkoutStarted ? _stopExercise : _startCountdown,
-              ),
-            ],
-          ),
-          body: _isInitialized
-              ? _buildMainInterface(themeProvider)
-              : Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: themeProvider.buttonColor),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Инициализация камеры...',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: themeProvider.textColor,
-                        ),
-                      ),
-                    ],
+                  Expanded(
+                    child: _isInitialized
+                        ? _buildMainInterface(themeProvider)
+                        : Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(color: GlassTheme.glowCyan),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Инициализация камеры...',
+                                  style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                                ),
+                              ],
+                            ),
+                          ),
                   ),
-                ),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
@@ -1024,7 +1036,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                                     return const Text(
                                       'Последнее упражнение!',
                                       style: TextStyle(
-                                        color: Colors.greenAccent,
+                                        color: GlassTheme.gradientTop,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -1120,13 +1132,12 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           ),
         ),
         
-        // Статистика и управление
+        // Статистика и управление (фон градиента просвечивает)
         Expanded(
           flex: 2,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            color: themeProvider.backgroundColor,
             child: Column(
               children: [
                 // Статистика
@@ -1151,22 +1162,21 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _isRecording 
-                        ? (themeProvider.isDarkMode ? Colors.green.withValues(alpha: 0.2) : Colors.green.shade50)
-                        : (themeProvider.isDarkMode ? themeProvider.buttonColor.withValues(alpha: 0.2) : Colors.blue.shade50),
+                    color: _isRecording
+                        ? GlassTheme.gradientTop.withValues(alpha: 0.2)
+                        : Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _isRecording 
-                          ? Colors.green
-                          : themeProvider.buttonColor,
+                      color: _isRecording
+                          ? GlassTheme.gradientTop
+                          : Colors.white.withOpacity(0.2),
                     ),
                   ),
                   child: Text(
                     _feedback,
-                    style: TextStyle(
+                    style: GlassTheme.bodyStyle.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: themeProvider.textColor,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1185,7 +1195,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                         onPressed: _isRecording ? null : _startExercise,
                         icon: Icons.play_arrow,
                         label: 'Начать',
-                        color: Colors.green,
+                        color: GlassTheme.gradientTop,
                         isEnabled: !_isRecording,
                         themeProvider: themeProvider,
                       ),
@@ -1226,7 +1236,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: isEnabled ? color : (themeProvider.isDarkMode ? Colors.grey[700] : Colors.grey[300]),
+            color: isEnabled ? color : Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(28),
             boxShadow: isEnabled ? [
               BoxShadow(
@@ -1246,7 +1256,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                 scale: isEnabled ? 1.0 : 0.9,
                 child: Icon(
                   icon,
-                  color: isEnabled ? Colors.white : (themeProvider.isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+                  color: isEnabled ? Colors.white : GlassTheme.textSecondary,
                   size: 28,
                 ),
               ),
@@ -1259,7 +1269,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: isEnabled ? color : (themeProvider.isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+            color: isEnabled ? color : GlassTheme.textSecondary,
           ),
           child: Text(label),
         ),
@@ -1271,35 +1281,21 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: themeProvider.cardColor,
+        color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: themeProvider.cardBorderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: themeProvider.isDarkMode ? 0.3 : 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
       child: Column(
         children: [
-          Icon(icon, color: themeProvider.buttonColor, size: 18),
+          Icon(icon, color: GlassTheme.glowCyan, size: 18),
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: themeProvider.textColor,
-            ),
+            style: GlassTheme.titleStyle.copyWith(fontSize: 16),
           ),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 10,
-              color: themeProvider.secondaryTextColor,
-            ),
+            style: GlassTheme.bodyStyle.copyWith(fontSize: 10),
           ),
         ],
       ),

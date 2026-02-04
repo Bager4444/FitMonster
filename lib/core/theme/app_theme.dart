@@ -1,5 +1,25 @@
 import 'package:flutter/material.dart';
 
+/// Стиль «стекла» для синего градиентного UI (профиль, диета и т.д.)
+class AppGlassTheme {
+  AppGlassTheme._();
+
+  static const Color primaryElectric = Color(0xFF38BDF8);
+  static const Color glassFill = Color(0x1AFFFFFF);
+  static const Color textOnDark = Color(0xFFF1F5F9);
+  static const Color textSecondaryOnDark = Color(0xFF94A3B8);
+
+  static const LinearGradient backgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF0EA5E9),
+      Color(0xFF0284C7),
+      Color(0xFF0369A1),
+    ],
+  );
+}
+
 /// Тема приложения FitMonster
 /// Минималистичный стиль с зеленым для успеха и красным для ошибок
 class AppTheme {
