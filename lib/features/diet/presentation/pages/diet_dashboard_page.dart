@@ -102,8 +102,43 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
                     builder: (context, child) => Theme(
                       data: Theme.of(context).copyWith(
                         colorScheme: Theme.of(context).colorScheme.copyWith(
-                          primary: GlassTheme.glowCyan,
+                          primary: GlassTheme.gradientTop,
                           onPrimary: Colors.white,
+                        ),
+                        textButtonTheme: TextButtonThemeData(
+                          style: TextButton.styleFrom(foregroundColor: Colors.black),
+                        ),
+                        inputDecorationTheme: InputDecorationThemeData(
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: GlassTheme.gradientTop),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: GlassTheme.gradientTop, width: 2),
+                          ),
+                          labelStyle: const TextStyle(color: GlassTheme.gradientTop),
+                          floatingLabelStyle: const TextStyle(color: GlassTheme.gradientTop),
+                          hintStyle: const TextStyle(color: GlassTheme.gradientTop),
+                        ),
+                        dialogTheme: DialogThemeData(
+                          shape: RoundedRectangleBorder(
+                            side: const BorderSide(color: GlassTheme.gradientTop, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          titleTextStyle: GlassTheme.titleStyle.copyWith(
+                            color: GlassTheme.gradientTop,
+                            fontSize: 20,
+                          ),
+                        ),
+                        datePickerTheme: DatePickerThemeData(
+                          headerHeadlineStyle: GlassTheme.titleStyle.copyWith(
+                            color: GlassTheme.gradientTop,
+                            fontSize: 24,
+                          ),
+                          headerHelpStyle: GlassTheme.bodyStyle.copyWith(
+                            color: GlassTheme.gradientTop,
+                          ),
                         ),
                       ),
                       child: child!,

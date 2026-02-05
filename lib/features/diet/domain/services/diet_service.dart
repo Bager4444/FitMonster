@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/features/diet/domain/models/user_profile.dart';
 import 'package:fitmonster/features/diet/domain/models/food_log.dart';
@@ -7,11 +8,22 @@ import 'package:fitmonster/features/diet/domain/models/food_log.dart';
 class DietService {
   static const String _profileBoxName = 'user_profile';
   static const String _foodLogsBoxName = 'food_logs';
+  static const String _keyFoodLogsClearedOnce = 'diet_food_logs_cleared_once_v1';
 
-  /// ID текущего пользователя — данные привязаны к аккаунту
-  static String _getCurrentUserId() {
-    return AuthService().currentUserId ?? 'local_user';
+  /// Однократная очистка записей питания (миграция после исправления фильтра по пользователю)
+  static Future<void> runOneTimeFoodLogsClearIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_keyFoodLogsClearedOnce) == true) return;
+    final box = await Hive.openBox<FoodLog>(_foodLogsBoxName);
+    await box.clear();
+    await prefs.setBool(_keyFoodLogsClearedOnce, true);
   }
+
+  /// ID текущего пользователя — данные привязаны к аккаунту (публичный для создания логов с тем же id)
+  static String get currentUserId =>
+      AuthService().currentUserId ?? 'local_user';
+
+  static String _getCurrentUserId() => currentUserId;
 
   /// Сохранить профиль пользователя
   static Future<void> saveUserProfile(UserProfile profile) async {
@@ -46,6 +58,8 @@ class DietService {
   static Future<void> addFoodLog(FoodLog log) async {
     final box = await Hive.openBox<FoodLog>(_foodLogsBoxName);
     await box.put(log.id, log);
+    await box.flush();
+    print('🍽 DietService.addFoodLog: id=${log.id} userId=${log.userId} totalInBox=${box.length}');
   }
 
   /// Получить записи за день для текущего пользователя
@@ -54,25 +68,34 @@ class DietService {
     final box = await Hive.openBox<FoodLog>(_foodLogsBoxName);
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
-
-    return box.values
+    final allLogs = box.values.toList();
+    final filtered = allLogs
         .where((log) =>
             log.userId == userId &&
-            log.timestamp.isAfter(startOfDay) &&
+            !log.timestamp.isBefore(startOfDay) &&
             log.timestamp.isBefore(endOfDay))
         .toList()
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    print('🍽 DietService.getFoodLogsForDate: date=$date userId=$userId boxTotal=${box.length} filtered=${filtered.length}');
+    if (box.length > 0 && filtered.isEmpty) {
+      final sample = allLogs.first;
+      print('🍽   sample log in box: userId=${sample.userId} timestamp=${sample.timestamp}');
+    }
+    return filtered;
   }
 
-  /// Получить записи за период
+  /// Получить записи за период только для текущего пользователя
   static Future<List<FoodLog>> getFoodLogsForPeriod(
     DateTime start,
     DateTime end,
   ) async {
+    final userId = _getCurrentUserId();
     final box = await Hive.openBox<FoodLog>(_foodLogsBoxName);
     return box.values
         .where((log) =>
-            log.timestamp.isAfter(start) && log.timestamp.isBefore(end))
+            log.userId == userId &&
+            log.timestamp.isAfter(start) &&
+            log.timestamp.isBefore(end))
         .toList()
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
   }

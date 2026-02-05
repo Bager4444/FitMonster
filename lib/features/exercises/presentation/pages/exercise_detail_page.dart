@@ -21,46 +21,53 @@ class ExerciseDetailPage extends StatelessWidget {
       child: Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: GlassTheme.scaffoldGradient),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 60,
-              pinned: true,
-              centerTitle: true,
-              backgroundColor: GlassTheme.gradientTop,
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  exercise.nameRu,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: GlassTheme.scaffoldGradient,
+        child: SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: GlassTheme.textPrimary),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            exercise.nameRu,
+                            style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 48),
+                    ],
                   ),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSection('Описание', exercise.description, Icons.description),
-                    const SizedBox(height: 24),
-                    _buildInstructionsSection(context),
-                    const SizedBox(height: 24),
-                    _buildMistakesSection(context),
-                    const SizedBox(height: 24),
-                    _buildMuscleGroupsSection(context),
-                    const SizedBox(height: 32),
-                    _buildStartButton(context),
-                    const SizedBox(height: 24),
-                  ],
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSection('Описание', exercise.description, Icons.description),
+                      const SizedBox(height: 24),
+                      _buildInstructionsSection(context),
+                      const SizedBox(height: 24),
+                      _buildMistakesSection(context),
+                      const SizedBox(height: 24),
+                      _buildMuscleGroupsSection(context),
+                      const SizedBox(height: 32),
+                      _buildStartButton(context),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       ),

@@ -9,7 +9,9 @@ import 'package:fitmonster/features/diet/domain/services/diet_service.dart';
 
 /// Страница диеты и трекера питания
 class DietPage extends StatefulWidget {
-  const DietPage({super.key});
+  const DietPage({super.key, this.isCurrentTab = false});
+
+  final bool isCurrentTab;
 
   @override
   State<DietPage> createState() => _DietPageState();
@@ -19,12 +21,26 @@ class _DietPageState extends State<DietPage> {
   bool _hasProfile = false;
   Macros? _targetMacros;
   int _profileVersion = 0; // Для принудительного пересоздания виджета
+  int _dataKey = 0; // Пересоздание дашборда/дневника при заходе на вкладку или смене аккаунта
   bool _isInitialized = false;
+  bool _wasOnDietTab = false;
 
   @override
   void initState() {
     super.initState();
     _loadProfile(isInitial: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant DietPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isCurrentTab && !_wasOnDietTab) {
+      _wasOnDietTab = true;
+      _loadProfile(isInitial: false);
+      setState(() => _dataKey++);
+    } else if (!widget.isCurrentTab) {
+      _wasOnDietTab = false;
+    }
   }
 
   Future<void> _loadProfile({bool isInitial = false}) async {
@@ -105,9 +121,12 @@ class _DietPageState extends State<DietPage> {
           ),
           body: TabBarView(
             children: [
-              DietDashboardPage(targetMacros: _targetMacros),
+              DietDashboardPage(
+                key: ValueKey('dash_$_dataKey'),
+                targetMacros: _targetMacros,
+              ),
               FoodLogPage(
-                key: ValueKey(_profileVersion),
+                key: ValueKey('log_$_dataKey'),
                 date: DateTime.now(),
                 targetMacros: _targetMacros!,
                 onProfileUpdated: _loadProfile,

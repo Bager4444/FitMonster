@@ -8,7 +8,6 @@ import 'package:fitmonster/features/exercises/data/exercises_database.dart';
 import 'package:fitmonster/features/exercises/domain/models/workout_complex.dart';
 import 'package:fitmonster/features/exercises/utils/exercise_colors.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/complex_workout_page.dart';
-import 'package:fitmonster/features/exercises/presentation/pages/fitness_assessment_page.dart';
 
 /// Страница комплексов упражнений
 class WorkoutComplexesPage extends StatefulWidget {
@@ -98,44 +97,6 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
         // Filters
         SliverToBoxAdapter(
           child: _buildFilters(themeProvider),
-        ),
-        
-        // Кнопка фитнес-теста
-        SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const FitnessAssessmentPage(),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.assessment, size: 24),
-                  SizedBox(width: 8),
-                  Text(
-                    'Пройти фитнес-тест',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
         
         // Complexes Grid

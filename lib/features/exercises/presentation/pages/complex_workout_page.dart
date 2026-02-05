@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:fitmonster/core/services/auth_service.dart';
+import 'package:fitmonster/core/services/stats_service.dart';
 import 'package:fitmonster/features/exercises/domain/models/workout_complex.dart';
 import 'package:fitmonster/features/exercises/data/exercises_database.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/exercise_camera_page.dart';
@@ -122,8 +124,8 @@ class _ComplexWorkoutPageState extends State<ComplexWorkoutPage> {
                 
                 const SizedBox(height: 40),
                 
-                // Следующее упражнение
-                if (_currentExerciseIndex < widget.complex.exerciseIds.length) ...[
+                // Следующее упражнение (индекс +1 — мы только что закончили текущий)
+                if (_currentExerciseIndex + 1 < widget.complex.exerciseIds.length) ...[
                   Text(
                     'Следующее упражнение:',
                     style: TextStyle(
@@ -134,7 +136,7 @@ class _ComplexWorkoutPageState extends State<ComplexWorkoutPage> {
                   const SizedBox(height: 8),
                   Text(
                     ExercisesDatabase.getExerciseById(
-                      widget.complex.exerciseIds[_currentExerciseIndex]
+                      widget.complex.exerciseIds[_currentExerciseIndex + 1]
                     )?.nameRu ?? 'Неизвестно',
                     style: const TextStyle(
                       fontSize: 28,
@@ -191,7 +193,7 @@ class _ComplexWorkoutPageState extends State<ComplexWorkoutPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Осталось ${widget.complex.exerciseIds.length - _currentExerciseIndex} из ${widget.complex.exerciseIds.length}',
+                        'Осталось ${widget.complex.exerciseIds.length - _currentExerciseIndex - 1} из ${widget.complex.exerciseIds.length}',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white.withValues(alpha: 0.8),
@@ -471,7 +473,13 @@ class _ComplexWorkoutPageState extends State<ComplexWorkoutPage> {
   void _onExerciseComplete() {
     // Переходим к следующему упражнению или завершаем комплекс
     if (_currentExerciseIndex + 1 >= widget.complex.exerciseIds.length) {
-      // Комплекс завершен
+      // Комплекс завершен — обновляем счётчик тренировок и стрик в профиле
+      final userId = AuthService().currentUserId;
+      if (userId != null) {
+        StatsService().updateWorkoutStreak(userId).catchError((e) {
+          print('❌ Error updating stats after complex: $e');
+        });
+      }
       setState(() {
         _isCompleted = true;
       });

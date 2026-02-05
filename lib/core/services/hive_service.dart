@@ -24,6 +24,7 @@ class HiveService {
   static const String recentBox = 'recent'; // Недавно использованные (userId -> [foodIds])
   static const String plansBox = 'plans'; // Планы питания
   static const String templatesBox = 'templates'; // Шаблоны приемов пищи
+  static const String foodLogsBox = 'food_logs'; // Записи питания (дневник)
 
   /// Инициализация Hive
   static Future<void> initialize() async {
@@ -110,6 +111,9 @@ class HiveService {
       }
       if (!Hive.isBoxOpen(templatesBox)) {
         boxesToOpen.add(Hive.openBox(templatesBox));
+      }
+      if (!Hive.isBoxOpen(foodLogsBox)) {
+        boxesToOpen.add(Hive.openBox<FoodLog>(foodLogsBox));
       }
       
       if (boxesToOpen.isNotEmpty) {

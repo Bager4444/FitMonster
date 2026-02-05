@@ -13,7 +13,7 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   static const double _navBottomMargin = 20;
-  static const double _navHorizontalMargin = 20;
+  static const double _navHorizontalMargin = 8;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class HomePage extends StatelessWidget {
                   children: [
                     const ExercisesPage(),
                     const WorkoutComplexesPage(),
-                    const DietPage(),
+                    DietPage(isCurrentTab: nav.index == 2),
                     ProfilePage(isCurrentTab: nav.index == 3),
                   ],
                 ),
@@ -57,7 +57,7 @@ class _FloatingNavCapsule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassContainer(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       borderRadius: 28,
       child: Consumer<NavIndexProvider>(
         builder: (context, nav, _) => Row(
@@ -95,7 +95,7 @@ class _NavItem extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             decoration: BoxDecoration(
               color: isActive
                   ? GlassTheme.glowCyan.withOpacity(0.2)
@@ -119,15 +119,19 @@ class _NavItem extends StatelessWidget {
                   Icon(
                     icon,
                     color: isActive ? GlassTheme.glowCyan : GlassTheme.textSecondary,
-                    size: 24,
+                    size: 22,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: isActive ? GlassTheme.glowCyan : GlassTheme.textSecondary,
-                      fontSize: 10,
-                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: isActive ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],

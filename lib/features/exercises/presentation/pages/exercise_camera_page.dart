@@ -643,10 +643,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       print('⚠️ Error stopping camera: $e');
     }
     
-    // Если это часть комплекса, вызываем callback
+    // Если это часть комплекса, вызываем callback (НЕ делаем pop — камера встроена в ComplexWorkoutPage)
     if (widget.complex != null && widget.onExerciseComplete != null) {
-      // Возвращаемся к ComplexWorkoutPage
-      Navigator.of(context).pop();
       widget.onExerciseComplete!();
       return;
     }
@@ -848,51 +846,59 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
             child: SafeArea(
               child: Column(
                 children: [
-                  // AppBar в стиле приложения
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    child: Row(
+                  Expanded(
+                    child: Column(
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back, color: GlassTheme.textPrimary),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
+                        // Шапка в общем блоке: назад + название по центру
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          child: Row(
                             children: [
-                              Text(
-                                widget.exercise.nameRu,
-                                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: GlassTheme.textPrimary),
+                                onPressed: () => Navigator.of(context).pop(),
                               ),
-                              if (widget.complex != null && widget.currentExerciseIndex != null)
-                                Text(
-                                  '${widget.currentExerciseIndex! + 1} из ${widget.complex!.exerciseIds.length} • ${widget.complex!.name}',
-                                  style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                              Expanded(
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        widget.exercise.nameRu,
+                                        style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                                      ),
+                                      if (widget.complex != null && widget.currentExerciseIndex != null)
+                                        Text(
+                                          '${widget.currentExerciseIndex! + 1} из ${widget.complex!.exerciseIds.length} • ${widget.complex!.name}',
+                                          style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                                        ),
+                                    ],
+                                  ),
                                 ),
+                              ),
+                              const SizedBox(width: 48),
                             ],
                           ),
                         ),
+                        Expanded(
+                          child: _isInitialized
+                              ? _buildMainInterface(themeProvider)
+                              : Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const CircularProgressIndicator(color: GlassTheme.glowCyan),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Инициализация камеры...',
+                                        style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                        ),
                       ],
                     ),
-                  ),
-                  Expanded(
-                    child: _isInitialized
-                        ? _buildMainInterface(themeProvider)
-                        : Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const CircularProgressIndicator(color: GlassTheme.glowCyan),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Инициализация камеры...',
-                                  style: GlassTheme.titleStyle.copyWith(fontSize: 18),
-                                ),
-                              ],
-                            ),
-                          ),
                   ),
                 ],
               ),

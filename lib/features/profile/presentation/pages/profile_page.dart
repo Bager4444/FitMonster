@@ -206,18 +206,9 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Неделя',
-                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
-              ),
-              Text(
-                'Серия: ${_userStats?.workoutStreak ?? 0}',
-                style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
-              ),
-            ],
+          Text(
+            'Неделя',
+            style: GlassTheme.titleStyle.copyWith(fontSize: 18),
           ),
           const SizedBox(height: 16),
           Row(

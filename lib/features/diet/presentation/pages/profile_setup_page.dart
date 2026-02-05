@@ -6,6 +6,7 @@ import 'package:fitmonster/core/widgets/custom_text_field.dart';
 import 'package:fitmonster/core/widgets/custom_button.dart';
 import 'package:fitmonster/core/theme/app_theme.dart';
 import 'package:fitmonster/core/theme/glass_theme.dart';
+import 'package:fitmonster/core/widgets/glass_card.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
 
 /// Экран настройки профиля для расчета калорий
@@ -96,36 +97,55 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.7,
         minChildSize: 0.5,
         maxChildSize: 0.95,
         expand: false,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            gradient: GlassTheme.scaffoldGradient,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Ваши результаты',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.close, color: GlassTheme.textPrimary),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'Ваши результаты',
+                            style: GlassTheme.titleStyle.copyWith(fontSize: 20),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
 
               // BMI
               _ResultCard(
@@ -172,14 +192,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               // Макронутриенты
               Text(
                 'Макронутриенты',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 8),
               Text(
                 'Рекомендуемое распределение: 30% белки, 30% жиры, 40% углеводы',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
               ),
               const SizedBox(height: 16),
 
@@ -218,9 +236,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               ),
               const SizedBox(height: 24),
 
-              CustomButton(
-                text: 'Сохранить профиль',
-                onPressed: () async {
+                CustomButton(
+                  text: 'Сохранить профиль',
+                  backgroundColor: GlassTheme.gradientTop,
+                  textColor: Colors.white,
+                  onPressed: () async {
                   // Проверить, изменились ли параметры
                   final hasChanges = existingProfile == null ||
                       existingProfile.age != profile.age ||
@@ -274,8 +294,9 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     );
                   }
                 },
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -574,7 +595,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   }
 }
 
-/// Карточка результата
+/// Карточка результата в стиле приложения (GlassTheme)
 class _ResultCard extends StatelessWidget {
   final String title;
   final String value;
@@ -594,13 +615,8 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
       child: Column(
         children: [
           Row(
@@ -608,8 +624,9 @@ class _ResultCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.4)),
                 ),
                 child: Icon(icon, color: color, size: 28),
               ),
@@ -618,36 +635,24 @@ class _ResultCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                          ),
-                        ),
-                        Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: Colors.grey[400],
-                        ),
-                      ],
+                    Text(
+                      title,
+                      style: GlassTheme.bodyStyle.copyWith(
+                        fontSize: 13,
+                        color: GlassTheme.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       value,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                          ),
+                      style: GlassTheme.titleStyle.copyWith(
+                        fontSize: 20,
+                        color: color,
+                      ),
                     ),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                      style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
                     ),
                   ],
                 ),
@@ -658,24 +663,22 @@ class _ResultCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white.withOpacity(0.15)),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.lightbulb_outline,
-                  size: 16,
-                  color: Colors.grey[600],
+                  size: 18,
+                  color: GlassTheme.glowCyan,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[700],
-                          fontSize: 12,
-                        ),
+                    style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
                   ),
                 ),
               ],
@@ -687,7 +690,7 @@ class _ResultCard extends StatelessWidget {
   }
 }
 
-/// Карточка макронутриента
+/// Карточка макронутриента в стиле приложения (GlassTheme)
 class _MacroCard extends StatelessWidget {
   final String label;
   final String value;
@@ -705,46 +708,39 @@ class _MacroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
       child: Column(
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w600,
-                ),
+            style: GlassTheme.bodyStyle.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+            style: GlassTheme.titleStyle.copyWith(
+              fontSize: 18,
+              color: color,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             percentage,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w500,
-                ),
+            style: GlassTheme.bodyStyle.copyWith(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             description,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontSize: 10,
-                ),
+            style: GlassTheme.bodyStyle.copyWith(fontSize: 10),
           ),
         ],
       ),
