@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:fitmonster/features/diet/domain/models/user_profile.dart';
 import 'package:fitmonster/features/diet/domain/models/food_item.dart';
@@ -71,7 +72,7 @@ class HiveService {
       if (!Hive.isAdapterRegistered(10)) {
         Hive.registerAdapter(RecipeAdapter());
       }
-      if (!Hive.isAdapterRegistered(11)) {
+      if (!Hive.isAdapterRegistered(14)) {
         Hive.registerAdapter(RecipeIngredientAdapter());
       }
       
@@ -119,10 +120,9 @@ class HiveService {
       if (boxesToOpen.isNotEmpty) {
         await Future.wait(boxesToOpen);
       }
-      
-      print('✅ Hive initialized successfully');
+      if (kDebugMode) debugPrint('Hive initialized');
     } catch (e) {
-      print('❌ Error initializing Hive: $e');
+      if (kDebugMode) debugPrint('Error initializing Hive: $e');
       rethrow;
     }
   }
@@ -140,9 +140,8 @@ class HiveService {
   }) async {
     try {
       await getBox(box).put(key, value);
-      print('✅ Data saved to Hive: $box/$key');
     } catch (e) {
-      print('❌ Error saving to Hive: $e');
+      if (kDebugMode) debugPrint('Error saving to Hive: $e');
       rethrow;
     }
   }
@@ -156,7 +155,7 @@ class HiveService {
     try {
       return getBox(box).get(key, defaultValue: defaultValue);
     } catch (e) {
-      print('❌ Error getting from Hive: $e');
+      if (kDebugMode) debugPrint('Error getting from Hive: $e');
       return defaultValue;
     }
   }
@@ -168,9 +167,8 @@ class HiveService {
   }) async {
     try {
       await getBox(box).delete(key);
-      print('✅ Data deleted from Hive: $box/$key');
     } catch (e) {
-      print('❌ Error deleting from Hive: $e');
+      if (kDebugMode) debugPrint('Error deleting from Hive: $e');
       rethrow;
     }
   }
@@ -179,9 +177,8 @@ class HiveService {
   static Future<void> clearBox(String box) async {
     try {
       await getBox(box).clear();
-      print('✅ Box cleared: $box');
     } catch (e) {
-      print('❌ Error clearing box: $e');
+      if (kDebugMode) debugPrint('Error clearing box: $e');
       rethrow;
     }
   }
@@ -201,10 +198,10 @@ class HiveService {
         clearBox(recentBox),
         clearBox(plansBox),
         clearBox(templatesBox),
+        clearBox(foodLogsBox),
       ]);
-      print('✅ All Hive data cleared');
     } catch (e) {
-      print('❌ Error clearing all data: $e');
+      if (kDebugMode) debugPrint('Error clearing all data: $e');
       rethrow;
     }
   }
@@ -212,6 +209,5 @@ class HiveService {
   /// Закрыть Hive
   static Future<void> close() async {
     await Hive.close();
-    print('✅ Hive closed');
   }
 }

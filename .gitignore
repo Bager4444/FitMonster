@@ -45,3 +45,8 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+
+# Flutter / IDE generated
+flutter_*.log
+flutter_analysis_report.json
+flutter_input.txt

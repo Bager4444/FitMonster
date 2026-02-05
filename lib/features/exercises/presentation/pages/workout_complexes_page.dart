@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitmonster/core/theme/theme_provider.dart';
 import 'package:fitmonster/core/theme/glass_theme.dart';
-import 'package:fitmonster/core/widgets/glass_card.dart';
 import 'package:fitmonster/features/exercises/data/workout_complexes_database.dart';
 import 'package:fitmonster/features/exercises/data/exercises_database.dart';
 import 'package:fitmonster/features/exercises/domain/models/workout_complex.dart';
@@ -21,10 +20,13 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+  bool _animationDone = false;
+
+  final Map<String, String> _exerciseNameCache = {};
+
   String _selectedCategory = 'Все';
   String _selectedDifficulty = 'Все';
-  
+
   final List<String> _categories = [
     'Все',
     'Силовые',
@@ -44,19 +46,34 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() => _animationDone = true);
+      }
+    });
     _animationController.forward();
+  }
+
+  List<WorkoutComplex> _getFilteredComplexes() {
+    final complexes = WorkoutComplexesDatabase.getAllComplexes();
+    return complexes.where((complex) {
+      final categoryMatch = _selectedCategory == 'Все' || complex.categoryName == _selectedCategory;
+      final difficultyMatch = _selectedDifficulty == 'Все' || complex.difficultyName == _selectedDifficulty;
+      return categoryMatch && difficultyMatch;
+    }).toList();
+  }
+
+  String _getExerciseName(String exerciseId) {
+    return _exerciseNameCache.putIfAbsent(
+      exerciseId,
+      () => ExercisesDatabase.getExerciseById(exerciseId)?.nameRu ?? exerciseId,
+    );
   }
 
   @override
@@ -69,46 +86,33 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: SafeArea(
-                top: true,
-                bottom: true,
-                child: _buildContent(themeProvider),
+        final filtered = _getFilteredComplexes();
+        final content = SafeArea(
+          top: true,
+          bottom: true,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: _buildHeader(themeProvider)),
+              SliverToBoxAdapter(child: _buildFilters(themeProvider)),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildComplexCard(filtered[index], index),
+                    ),
+                    childCount: filtered.length,
+                  ),
+                ),
               ),
-            );
-          },
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
+          ),
         );
+        if (_animationDone) return content;
+        return FadeTransition(opacity: _fadeAnimation, child: content);
       },
-    );
-  }
-
-  Widget _buildContent(ThemeProvider themeProvider) {
-    return CustomScrollView(
-      slivers: [
-        // Header
-        SliverToBoxAdapter(
-          child: _buildHeader(themeProvider),
-        ),
-        
-        // Filters
-        SliverToBoxAdapter(
-          child: _buildFilters(themeProvider),
-        ),
-        
-        // Complexes Grid
-        SliverToBoxAdapter(
-          child: _buildComplexesGrid(themeProvider),
-        ),
-        
-        // Bottom Spacing
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 100),
-        ),
-      ],
     );
   }
 
@@ -266,50 +270,20 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
     );
   }
 
-  Widget _buildComplexesGrid(ThemeProvider themeProvider) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          _buildComplexesList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildComplexesList() {
-    final complexes = WorkoutComplexesDatabase.getAllComplexes();
-    
-    // Фильтрация
-    final filteredComplexes = complexes.where((complex) {
-      final categoryMatch = _selectedCategory == 'Все' || 
-          complex.categoryName == _selectedCategory;
-      final difficultyMatch = _selectedDifficulty == 'Все' || 
-          complex.difficultyName == _selectedDifficulty;
-      
-      return categoryMatch && difficultyMatch;
-    }).toList();
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: filteredComplexes.length,
-      itemBuilder: (context, index) {
-        final complex = filteredComplexes[index];
-        return _buildComplexCard(complex, index);
-      },
-    );
-  }
-
   Widget _buildComplexCard(WorkoutComplex complex, int index) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: GlassCard(
-        padding: const EdgeInsets.all(16),
-        borderRadius: 20,
-        child: Column(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showWorkoutSettingsDialog(complex),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+          ),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -405,7 +379,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                   ...complex.exerciseIds.asMap().entries.map((entry) {
                     final idx = entry.key;
                     final exerciseId = entry.value;
-                    final exercise = ExercisesDatabase.getExerciseById(exerciseId);
+                    final name = _getExerciseName(exerciseId);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
@@ -427,7 +401,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              exercise?.nameRu ?? exerciseId,
+                              name,
                               style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
                             ),
                           ),
@@ -457,36 +431,34 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
               ],
             ),
             const SizedBox(height: 16),
-            GestureDetector(
-              onTap: () => _showWorkoutSettingsDialog(complex),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.play_arrow, color: Colors.black, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Начать комплекс',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.play_arrow, color: Colors.black, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Начать комплекс',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
+    ),
     );
   }
 

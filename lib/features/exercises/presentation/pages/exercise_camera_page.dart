@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
@@ -62,15 +63,18 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   
   // ML Kit
   PoseDetector? _poseDetector;
-  List<Pose> _poses = [];
+  final ValueNotifier<List<Pose>> _posesNotifier = ValueNotifier<List<Pose>>([]);
   
   // FPS мониторинг
   int _frameCount = 0;
   DateTime _lastFpsUpdate = DateTime.now();
   double _currentFps = 0.0;
   
-  // Улучшенный счетчик повторений
   final ImprovedRepCounter _repCounter = ImprovedRepCounter();
+  
+  // Throttle setState для UI (не на каждый кадр)
+  DateTime _lastUiUpdate = DateTime.now();
+  static const int _uiUpdateIntervalMs = 280;
   
   // Флаг обработки кадра
   bool _isProcessingFrame = false;
@@ -107,9 +111,9 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         model: PoseDetectionModel.accurate,
       );
       _poseDetector = PoseDetector(options: options);
-      print('✅ ML Kit PoseDetector initialized (stream mode, accurate model)');
+      debugPrint('✅ ML Kit PoseDetector initialized (stream mode, accurate model)');
     } catch (e) {
-      print('❌ Error initializing ML Kit: $e');
+      debugPrint('❌ Error initializing ML Kit: $e');
       if (mounted) {
         setState(() {
           _feedback = 'Ошибка инициализации ML анализа';
@@ -152,9 +156,9 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         debugPrint('✅ Камера инициализирована быстро, _isInitialized = true');
       }
       
-      print('✅ Camera initialized: ${frontCamera.lensDirection}, resolution: medium');
+      debugPrint('✅ Camera initialized: ${frontCamera.lensDirection}, resolution: medium');
     } catch (e) {
-      print('❌ Camera initialization error: $e');
+      debugPrint('❌ Camera initialization error: $e');
       setState(() {
         _feedback = 'Ошибка инициализации камеры: $e';
       });
@@ -190,7 +194,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   void _startExercise() async {
     // Защита от повторного запуска
     if (_isRecording) {
-      print('⚠️ Exercise already running');
+      debugPrint('⚠️ Exercise already running');
       return;
     }
     
@@ -206,13 +210,11 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           targetReps: 5,
         );
       } catch (e) {
-        print('Тренировка без сохранения: $e');
+        debugPrint('Тренировка без сохранения: $e');
       }
       
-      // Настраиваем счетчик для текущего упражнения
       _repCounter.setExerciseType(widget.exercise.id);
       _repCounter.reset();
-      _repCounter.setExerciseType(widget.exercise.id);
       
       setState(() {
         _isRecording = true;
@@ -243,9 +245,9 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       // Запускаем обработку кадров
       _startImageStream();
       
-      print('✅ Exercise started: ${widget.exercise.nameRu}');
+      debugPrint('✅ Exercise started: ${widget.exercise.nameRu}');
     } catch (e) {
-      print('❌ Error starting exercise: $e');
+      debugPrint('❌ Error starting exercise: $e');
       setState(() {
         _feedback = 'Ошибка запуска тренировки: $e';
         _isRecording = false;
@@ -258,7 +260,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       return;
     }
 
-    print('📷 Starting camera image stream (target $_targetFps FPS, skip every $_frameSkipRate frame)');
+    debugPrint('📷 Starting camera image stream (target $_targetFps FPS, skip every $_frameSkipRate frame)');
     
     _cameraController!.startImageStream((CameraImage image) {
       // Пропускаем кадр если предыдущий еще обрабатывается
@@ -286,7 +288,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         _isProcessingFrame = false;
       }).catchError((e) {
         _isProcessingFrame = false;
-        print('❌ Error in image processing: $e');
+        debugPrint('❌ Error in image processing: $e');
       });
       
       _frameCount++;
@@ -295,7 +297,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   Future<void> _processImage(CameraImage image) async {
     if (_poseDetector == null) {
-      print('❌ PoseDetector is null');
+      debugPrint('❌ PoseDetector is null');
       return;
     }
 
@@ -304,7 +306,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       
       final inputImage = _createInputImageFromCameraImage(image);
       if (inputImage == null) {
-        print('❌ Failed to create InputImage');
+        debugPrint('❌ Failed to create InputImage');
         return;
       }
       
@@ -313,35 +315,36 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       final now = DateTime.now();
       if (now.difference(_lastPoseLog).inMilliseconds >= 1000) {
         final landmarksCount = poses.isNotEmpty ? poses.first.landmarks.length : 0;
-        print(
+        debugPrint(
           '🧍 poses=${poses.length} landmarks=$landmarksCount rotation=$_inputImageRotation size=$_inputImageSize fps=${_currentFps.toStringAsFixed(1)}',
         );
         _lastPoseLog = now;
       }
       
+      _posesNotifier.value = poses;
+      final prevRep = _repCount;
+      if (poses.isEmpty) {
+        _feedback = 'Встаньте в кадр полностью';
+      } else {
+        final pose = poses.first;
+        final confidence = _calculatePoseConfidence(pose);
+        if (confidence < 50) {
+          _feedback = 'Улучшите освещение и встаньте ближе';
+        } else {
+          _feedback = 'Отличная техника! (${_currentFps.toStringAsFixed(0)} FPS)';
+          _analyzeExercise(poses);
+        }
+      }
       if (mounted) {
-        setState(() {
-          _poses = poses;
-          
-          if (poses.isEmpty) {
-            _feedback = 'Встаньте в кадр полностью';
-          } else {
-            final pose = poses.first;
-            final confidence = _calculatePoseConfidence(pose);
-            
-            print('🔍 Pose confidence: $confidence%');
-            
-            if (confidence < 50) {
-              _feedback = 'Улучшите освещение и встаньте ближе';
-            } else {
-              _feedback = 'Отличная техника! (${_currentFps.toStringAsFixed(0)} FPS)';
-              _analyzeExercise(poses);
-            }
-          }
-        });
+        final now = DateTime.now();
+        final repChanged = _repCount != prevRep;
+        if (repChanged || now.difference(_lastUiUpdate).inMilliseconds >= _uiUpdateIntervalMs) {
+          _lastUiUpdate = now;
+          setState(() {});
+        }
       }
     } catch (e) {
-      print('❌ Error processing image: $e');
+      debugPrint('❌ Error processing image: $e');
     }
   }
 
@@ -388,10 +391,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         );
       }
 
-      print('❌ Unsupported image format group: $formatGroup');
+      debugPrint('❌ Unsupported image format group: $formatGroup');
       return null;
     } catch (e) {
-      print('❌ Error creating InputImage: $e');
+      debugPrint('❌ Error creating InputImage: $e');
       return null;
     }
   }
@@ -489,13 +492,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       double averageConfidence = totalConfidence / landmarkCount;
       _formScore = (averageConfidence * 100).clamp(0, 100);
       
-      // Используем улучшенный счетчик повторений
       final result = _repCounter.analyzePose(pose);
-      
-      // Обновляем состояние
-      if (result.repCount > _repCount) {
-        // Новое повторение!
-        _repCount = result.repCount;
+      final newCount = result.repCount;
+      if (newCount > _repCount) {
+        _repCount = newCount;
         
         // Начисляем опыт за новые повторения/время
         _awardExperience();
@@ -527,7 +527,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           ).then((session) {
             _currentSession = session;
           }).catchError((e) {
-            print('❌ Error saving rep: $e');
+            debugPrint('❌ Error saving rep: $e');
           });
         }
       }
@@ -623,7 +623,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           showExperienceNotification(context, result);
         }
       } catch (e) {
-        print('Ошибка при начислении опыта: $e');
+        debugPrint('Ошибка при начислении опыта: $e');
       }
     }
   }
@@ -640,7 +640,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         await _cameraController!.stopImageStream();
       }
     } catch (e) {
-      print('⚠️ Error stopping camera: $e');
+      debugPrint('⚠️ Error stopping camera: $e');
     }
     
     // Если это часть комплекса, вызываем callback (НЕ делаем pop — камера встроена в ComplexWorkoutPage)
@@ -755,10 +755,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       // Останавливаем поток
       if (_cameraController != null && _cameraController!.value.isStreamingImages) {
         await _cameraController!.stopImageStream();
-        print('✅ Camera stream stopped');
+        debugPrint('✅ Camera stream stopped');
       }
     } catch (e) {
-      print('⚠️ Error stopping camera stream: $e');
+      debugPrint('⚠️ Error stopping camera stream: $e');
     }
     
     // Завершаем сессию тренировки
@@ -789,7 +789,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           }
         }
       } catch (e) {
-        print('❌ Error completing workout: $e');
+        debugPrint('❌ Error completing workout: $e');
         if (mounted) {
           setState(() {
             _feedback = 'Тренировка завершена! (ошибка сохранения)';
@@ -818,19 +818,12 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   @override
   void dispose() {
-    // Останавливаем все таймеры
     _feedbackTimer?.cancel();
     _durationTimer?.cancel();
-    
-    // Останавливаем запись если активна
     _isRecording = false;
-    
-    // Освобождаем ресурсы камеры
+    _posesNotifier.dispose();
     _cameraController?.dispose();
-    
-    // Закрываем ML Kit детектор
     _poseDetector?.close();
-    
     super.dispose();
   }
 
@@ -953,27 +946,32 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                       child: CircularProgressIndicator(color: Colors.white),
                     ),
                   
-                  // Overlay с позами (RepaintBoundary изолирует перерисовку)
-                  if (_poses.isNotEmpty)
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: CustomPaint(
-                          painter: PosePainter(
-                            poses: _poses,
-                            imageSize: _inputImageSize == Size.zero
-                                ? Size(
-                                    _cameraController?.value.previewSize?.width ?? 480,
-                                    _cameraController?.value.previewSize?.height ?? 640,
-                                  )
-                                : _inputImageSize,
-                            rotation: _inputImageRotation,
-                            // Зеркалим только отрисовку "скелета"
-                            mirror: _cameraController?.description.lensDirection ==
-                                CameraLensDirection.front,
-                          ),
-                        ),
+                  // Overlay с позами: ValueListenableBuilder — перерисовка без setState всей страницы
+                  Positioned.fill(
+                    child: RepaintBoundary(
+                      child: ValueListenableBuilder<List<Pose>>(
+                        valueListenable: _posesNotifier,
+                        builder: (context, poses, _) {
+                          if (poses.isEmpty) return const SizedBox.shrink();
+                          final size = _inputImageSize == Size.zero
+                              ? Size(
+                                  _cameraController?.value.previewSize?.width ?? 480,
+                                  _cameraController?.value.previewSize?.height ?? 640,
+                                )
+                              : _inputImageSize;
+                          return CustomPaint(
+                            painter: PosePainter(
+                              poses: poses,
+                              imageSize: size,
+                              rotation: _inputImageRotation,
+                              mirror: _cameraController?.description.lensDirection ==
+                                  CameraLensDirection.front,
+                            ),
+                          );
+                        },
                       ),
                     ),
+                  ),
                   
                   // Индикатор записи
                   if (_isRecording)

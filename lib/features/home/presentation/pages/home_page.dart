@@ -9,11 +9,19 @@ import 'package:fitmonster/features/exercises/presentation/pages/workout_complex
 import 'package:fitmonster/features/profile/presentation/pages/profile_page.dart';
 
 /// Главная страница: Deep Blue градиент, плавающая стеклянная навигация.
-class HomePage extends StatelessWidget {
+/// Вкладки создаются лениво — только при первом открытии, чтобы не строить все экраны при старте.
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   static const double _navBottomMargin = 20;
   static const double _navHorizontalMargin = 8;
+
+  final List<Widget?> _cachedTabs = [null, null]; // только Упражнения и Комплексы кэшируем
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +37,21 @@ class HomePage extends StatelessWidget {
               top: true,
               bottom: false,
               child: Consumer<NavIndexProvider>(
-                builder: (context, nav, _) => IndexedStack(
-                  index: nav.index,
-                  children: [
-                    const ExercisesPage(),
-                    const WorkoutComplexesPage(),
-                    DietPage(isCurrentTab: nav.index == 2),
-                    ProfilePage(isCurrentTab: nav.index == 3),
-                  ],
-                ),
+                builder: (context, nav, _) {
+                  final i = nav.index;
+                  if (i < 2 && _cachedTabs[i] == null) {
+                    _cachedTabs[i] = i == 0 ? const ExercisesPage() : const WorkoutComplexesPage();
+                  }
+                  return IndexedStack(
+                    index: i,
+                    children: [
+                      _cachedTabs[0] ?? const SizedBox.shrink(),
+                      _cachedTabs[1] ?? const SizedBox.shrink(),
+                      DietPage(isCurrentTab: i == 2),
+                      ProfilePage(isCurrentTab: i == 3),
+                    ],
+                  );
+                },
               ),
             ),
             Positioned(

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/core/widgets/glass_card.dart';
@@ -20,10 +21,18 @@ class _ExercisesPageState extends State<ExercisesPage>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+  bool _animationDone = false;
+
   String _selectedCategory = 'Все';
   String _searchQuery = '';
+  String _searchQueryDebounced = '';
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  static const _searchDebounceDuration = Duration(milliseconds: 280);
+
+  List<Exercise>? _cachedFilteredExercises;
+  String? _cachedFilterKey;
+
   final List<String> _categories = [
     'Все',
     'Кардио',
@@ -36,64 +45,86 @@ class _ExercisesPageState extends State<ExercisesPage>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() => _animationDone = true);
+      }
+    });
     _animationController.forward();
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _animationController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
+  List<Exercise> _getFilteredExercises() {
+    final key = '$_searchQueryDebounced|$_selectedCategory';
+    if (_cachedFilterKey == key && _cachedFilteredExercises != null) {
+      return _cachedFilteredExercises!;
+    }
+    final exercises = _searchQueryDebounced.trim().isEmpty
+        ? ExercisesDatabase.getAllExercises()
+        : ExercisesDatabase.searchExercises(_searchQueryDebounced.trim());
+    final filtered = _selectedCategory == 'Все'
+        ? exercises
+        : exercises.where((e) => ExerciseColors.getCategoryForExercise(e.id) == _selectedCategory).toList();
+    _cachedFilterKey = key;
+    _cachedFilteredExercises = filtered;
+    return filtered;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return FadeTransition(
-          opacity: _fadeAnimation,
-          child: SafeArea(
-            top: false,
-            bottom: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 100),
-              child: _buildContent(context),
+    final content = SafeArea(
+      top: false,
+      bottom: false,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeroSection()),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          SliverToBoxAdapter(child: _buildCategories(context)),
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          SliverToBoxAdapter(child: _buildSearchBar(context)),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          SliverToBoxAdapter(child: _buildQuickStart(context)),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Все упражнения',
+                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+              ),
             ),
           ),
-        );
-      },
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: _buildExercisesSliverGrid(context),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+    if (_animationDone) {
+      return content;
+    }
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: content,
     );
   }
 
-  Widget _buildContent(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildHeroSection(),
-        const SizedBox(height: 16),
-        _buildCategories(context),
-        const SizedBox(height: 12),
-        _buildSearchBar(context),
-        const SizedBox(height: 16),
-        _buildQuickStart(context),
-        const SizedBox(height: 16),
-        _buildExercisesGrid(context),
-      ],
-    );
-  }
 
   Widget _buildHeroSection() {
     return Padding(
@@ -155,7 +186,13 @@ class _ExercisesPageState extends State<ExercisesPage>
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: TextField(
         controller: _searchController,
-        onChanged: (value) => setState(() => _searchQuery = value),
+        onChanged: (value) {
+          _searchQuery = value;
+          _searchDebounce?.cancel();
+          _searchDebounce = Timer(_searchDebounceDuration, () {
+            if (mounted) setState(() => _searchQueryDebounced = value);
+          });
+        },
         style: const TextStyle(color: GlassTheme.textPrimary, fontSize: 15),
         decoration: InputDecoration(
           hintText: 'Поиск упражнений...',
@@ -240,50 +277,35 @@ class _ExercisesPageState extends State<ExercisesPage>
     );
   }
 
-  Widget _buildExercisesGrid(BuildContext context) {
-    final exercises = _searchQuery.trim().isEmpty
-        ? ExercisesDatabase.getAllExercises()
-        : ExercisesDatabase.searchExercises(_searchQuery.trim());
-    final filteredExercises = _selectedCategory == 'Все'
-        ? exercises
-        : exercises.where((e) => ExerciseColors.getCategoryForExercise(e.id) == _selectedCategory).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Все упражнения',
-            style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+  Widget _buildExercisesSliverGrid(BuildContext context) {
+    final filtered = _getFilteredExercises();
+    const crossCount = 2;
+    const spacing = 12.0;
+    return SliverLayoutBuilder(
+      builder: (context, constraints) {
+        final width = (constraints.crossAxisExtent - spacing * (crossCount - 1)) / crossCount;
+        final cellHeight = 180.0;
+        return SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossCount,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            childAspectRatio: width / cellHeight,
           ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final crossCount = 2;
-              final spacing = 12.0;
-              final width = (constraints.maxWidth - spacing * (crossCount - 1)) / crossCount;
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: List.generate(filteredExercises.length, (index) {
-                  return SizedBox(
-                    width: width,
-                    child: _buildExerciseCard(filteredExercises[index], index),
-                  );
-                }),
-              );
-            },
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _buildExerciseCardLight(filtered[index]),
+            childCount: filtered.length,
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildExerciseCard(Exercise exercise, int index) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 150, maxHeight: 190),
-      child: GlassCard(
+  /// Лёгкая карточка без BackdropFilter для плавного скролла сетки
+  Widget _buildExerciseCardLight(Exercise exercise) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         onTap: () {
           Navigator.push(
             context,
@@ -292,79 +314,85 @@ class _ExercisesPageState extends State<ExercisesPage>
             ),
           );
         },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: GlassTheme.glowCyan.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      _getEmojiForExercise(exercise.id),
-                      style: const TextStyle(fontSize: 22),
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: GlassTheme.glowCyan.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(_getEmojiForExercise(exercise.id), style: const TextStyle(fontSize: 22)),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        exercise.nameRu,
-                        style: GlassTheme.titleStyle.copyWith(fontSize: 14),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        ExerciseColors.getCategoryForExercise(exercise.id),
-                        style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
-              ),
-              child: Text(
-                _getDifficultyText(_getDifficultyForExercise(exercise.id)),
-                style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
-              ),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ExerciseCameraPage(exercise: exercise),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          exercise.nameRu,
+                          style: GlassTheme.titleStyle.copyWith(fontSize: 14),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ExerciseColors.getCategoryForExercise(exercise.id),
+                          style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                  );
-                },
-                icon: const Icon(Icons.play_arrow_rounded, color: GlassTheme.glowCyan, size: 18),
-                label: const Text('Начать', style: TextStyle(color: GlassTheme.glowCyan, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: Text(
+                  _getDifficultyText(_getDifficultyForExercise(exercise.id)),
+                  style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ExerciseCameraPage(exercise: exercise),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded, color: GlassTheme.glowCyan, size: 18),
+                  label: const Text('Начать', style: TextStyle(color: GlassTheme.glowCyan, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

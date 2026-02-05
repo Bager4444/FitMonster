@@ -39,37 +39,20 @@ void main() async {
   final initService = DatabaseInitService();
   await initService.migrateToLocalFoodsIfNeeded();
 
-  // Инициализация базы данных (импорт продуктов из foods.json и рецептов при первом запуске)
-  if (!await initService.isInitialized()) {
-    print('🔄 Начинаю инициализацию базы данных...');
-    // Запускаем инициализацию и ждем завершения
-    try {
-      await initService.initializeDatabase(
-        onProgress: (message) => print('📊 DB Init: $message'),
-        onError: (error) => print('⚠️ DB Init Error: $error'),
-      );
-      print('✅ Инициализация базы данных завершена');
-      
-      // Проверить количество продуктов после инициализации
-      final dbService = FoodDatabaseService();
-      final foodsCount = dbService.getFoodsCount();
-      final recipesCount = dbService.getRecipesCount();
-      print('📊 Продуктов в базе: $foodsCount, Рецептов: $recipesCount');
-    } catch (e, stackTrace) {
-      print('❌ Критическая ошибка инициализации: $e');
-      print('Stack trace: $stackTrace');
-      // Продолжаем запуск приложения даже если инициализация не удалась
-    }
-  } else {
-    print('✅ База данных уже инициализирована');
-    // Проверить количество продуктов
-    final dbService = FoodDatabaseService();
-    final foodsCount = dbService.getFoodsCount();
-    final recipesCount = dbService.getRecipesCount();
-    print('📊 Продуктов в базе: $foodsCount, Рецептов: $recipesCount');
-  }
-  
+  // Запуск UI сразу; инициализация БД — в фоне (не блокирует старт)
   runApp(const FitMonsterApp());
+
+  // Инициализация базы данных в фоне при первом запуске
+  if (!await initService.isInitialized()) {
+    initService.initializeDatabase(
+      onProgress: (message) => debugPrint('DB Init: $message'),
+      onError: (error) => debugPrint('DB Init Error: $error'),
+    ).then((_) {
+      debugPrint('Инициализация базы данных завершена');
+    }).catchError((e, stackTrace) {
+      debugPrint('Ошибка инициализации БД: $e');
+    });
+  }
 }
 
 class FitMonsterApp extends StatelessWidget {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitmonster/features/diet/domain/models/food_item.dart';
@@ -40,6 +41,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
   List<FoodItem> _searchResults = [];
   List<FoodItem> _favoriteFoods = [];
   List<FoodItem> _recentFoods = [];
+  Set<String> _favoriteIds = {}; // Кэш избранных id — один запрос вместо N
   FoodItem? _selectedFood;
   FoodServing? _selectedServing;
   bool _isSearching = false;
@@ -87,35 +89,35 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
     try {
       // Проверить количество продуктов в базе
       final foodsCount = _foodRepo.localCount;
-      print('📊 Количество продуктов в базе: $foodsCount');
+      debugPrint('📊 Количество продуктов в базе: $foodsCount');
       
       if (foodsCount == 0) {
         // База пуста - попробовать инициализировать
-        print('⚠️ База данных пуста, проверяю инициализацию...');
+        debugPrint('⚠️ База данных пуста, проверяю инициализацию...');
         final initService = DatabaseInitService();
         final isInitialized = await initService.isInitialized();
-        print('📋 База инициализирована: $isInitialized');
+        debugPrint('📋 База инициализирована: $isInitialized');
         
         if (!isInitialized) {
-          print('🔄 Запускаю инициализацию базы данных...');
+          debugPrint('🔄 Запускаю инициализацию базы данных...');
           await initService.initializeDatabase(
-            onProgress: (msg) => print('📊 $msg'),
-            onError: (err) => print('❌ $err'),
+            onProgress: (msg) => debugPrint('DB: $msg'),
+            onError: (err) => debugPrint('DB Error: $err'),
           );
           // Перезагрузить данные после инициализации
           final newCount = _foodRepo.localCount;
-          print('✅ После инициализации продуктов: $newCount');
+          debugPrint('✅ После инициализации продуктов: $newCount');
         }
       }
       
       // Загрузить популярные продукты через репозиторий
       final popular = _foodRepo.getPopularFoods(maxResults: 10);
-      print('📦 Загружено популярных продуктов: ${popular.length}');
+      debugPrint('📦 Загружено популярных продуктов: ${popular.length}');
       
       // Загрузить избранные и недавние (через старый сервис - локальные данные)
       final favorites = await _dbService.getFavoriteFoods(_userId);
       final recent = await _dbService.getRecentFoods(_userId, maxResults: 5);
-      print('⭐ Избранных: ${favorites.length}, Недавних: ${recent.length}');
+      debugPrint('⭐ Избранных: ${favorites.length}, Недавних: ${recent.length}');
       
       // Проверить состояние сети
       final isOffline = _foodRepo.isOffline;
@@ -123,6 +125,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       setState(() {
         _searchResults = popular;
         _favoriteFoods = favorites;
+        _favoriteIds = favorites.map((f) => f.id).toSet();
         _recentFoods = recent;
         _isOffline = isOffline;
         _isLoading = false;
@@ -131,8 +134,8 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       setState(() {
         _isLoading = false;
       });
-      print('❌ Ошибка загрузки данных: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('❌ Ошибка загрузки данных: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ошибка загрузки данных: $e')),
@@ -174,7 +177,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
           
           // Показать уведомление об ошибке API (если есть)
           if (result.hasError) {
-            print('⚠️ Ошибка API: ${result.error}');
+            debugPrint('⚠️ Ошибка API: ${result.error}');
           }
         }
       } catch (e) {
@@ -239,19 +242,20 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
   }
 
   Future<void> _toggleFavorite(FoodItem food) async {
-    final isFavorite = await _dbService.isFavorite(_userId, food.id);
-    
+    final isFavorite = _favoriteIds.contains(food.id);
     if (isFavorite) {
       await _dbService.removeFromFavorites(_userId, food.id);
+      setState(() {
+        _favoriteIds = _favoriteIds.difference({food.id});
+        _favoriteFoods = _favoriteFoods.where((f) => f.id != food.id).toList();
+      });
     } else {
       await _dbService.addToFavorites(_userId, food.id);
+      setState(() {
+        _favoriteIds = _favoriteIds.union({food.id});
+        _favoriteFoods = [food, ..._favoriteFoods];
+      });
     }
-    
-    // Обновить список избранных
-    final favorites = await _dbService.getFavoriteFoods(_userId);
-    setState(() {
-      _favoriteFoods = favorites;
-    });
   }
 
   void _addFood() {
@@ -416,7 +420,6 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                       ),
                     ),
                     onChanged: (value) {
-                      print('🔍 Ввод текста: "$value" (длина: ${value.length})');
                       _search(value);
                     },
                     onTap: () {
@@ -681,74 +684,67 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
 
   Widget _buildFoodTile(FoodItem food) {
     final isSelected = _selectedFood?.id == food.id;
-    
-    return FutureBuilder<bool>(
-      future: _dbService.isFavorite(_userId, food.id),
-      builder: (context, snapshot) {
-        final isFavorite = snapshot.data ?? false;
-        
-        return ListTile(
-          selected: isSelected,
-          selectedTileColor: GlassTheme.glowCyan.withOpacity(0.15),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? GlassTheme.glowCyan
-                  : Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? GlassTheme.glowCyan : Colors.white24,
+    final isFavorite = _favoriteIds.contains(food.id);
+    return ListTile(
+      selected: isSelected,
+      selectedTileColor: GlassTheme.glowCyan.withOpacity(0.15),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? GlassTheme.glowCyan
+              : Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? GlassTheme.glowCyan : Colors.white24,
+          ),
+        ),
+        child: Icon(
+          Icons.restaurant,
+          color: isSelected ? GlassTheme.gradientBottom : GlassTheme.textSecondary,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        food.nameRu,
+        style: GlassTheme.titleStyle.copyWith(fontSize: 15),
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (food.brand != null && food.brand!.isNotEmpty)
+            Text(
+              food.brand!,
+              style: GlassTheme.bodyStyle.copyWith(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
-            child: Icon(
-              Icons.restaurant,
-              color: isSelected ? GlassTheme.gradientBottom : GlassTheme.textSecondary,
-              size: 20,
+          Text(
+            '${food.calories.round()} ккал • Б: ${food.protein.toStringAsFixed(1)}г Ж: ${food.fat.toStringAsFixed(1)}г У: ${food.carbs.toStringAsFixed(1)}г',
+            style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+          ),
+        ],
+      ),
+      isThreeLine: food.brand != null && food.brand!.isNotEmpty,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              isFavorite ? Icons.star : Icons.star_border,
+              color: isFavorite ? GlassTheme.glowCyan : GlassTheme.textSecondary,
             ),
+            onPressed: () => _toggleFavorite(food),
+            tooltip: isFavorite ? 'Удалить из избранного' : 'Добавить в избранное',
           ),
-          title: Text(
-            food.nameRu,
-            style: GlassTheme.titleStyle.copyWith(fontSize: 15),
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (food.brand != null && food.brand!.isNotEmpty)
-                Text(
-                  food.brand!,
-                  style: GlassTheme.bodyStyle.copyWith(
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              Text(
-                '${food.calories.round()} ккал • Б: ${food.protein.toStringAsFixed(1)}г Ж: ${food.fat.toStringAsFixed(1)}г У: ${food.carbs.toStringAsFixed(1)}г',
-                style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
-              ),
-            ],
-          ),
-          isThreeLine: food.brand != null && food.brand!.isNotEmpty,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.star : Icons.star_border,
-                  color: isFavorite ? GlassTheme.glowCyan : GlassTheme.textSecondary,
-                ),
-                onPressed: () => _toggleFavorite(food),
-                tooltip: isFavorite ? 'Удалить из избранного' : 'Добавить в избранное',
-              ),
-              if (isSelected)
-                const Icon(Icons.check_circle, color: GlassTheme.glowCyan),
-            ],
-          ),
-          onTap: () => _selectFood(food),
-        );
-      },
+          if (isSelected)
+            const Icon(Icons.check_circle, color: GlassTheme.glowCyan),
+        ],
+      ),
+      onTap: () => _selectFood(food),
     );
   }
 }
