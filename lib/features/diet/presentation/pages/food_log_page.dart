@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
+import 'package:fitmonster/core/services/stats_service.dart';
+import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/features/diet/domain/models/food_log.dart';
 import 'package:fitmonster/features/diet/domain/services/calorie_calculator.dart';
 import 'package:fitmonster/features/diet/domain/services/diet_service.dart';
+import 'package:fitmonster/core/widgets/glass_card.dart';
 import 'package:fitmonster/features/diet/presentation/widgets/add_food_dialog.dart';
-import 'package:fitmonster/features/diet/presentation/pages/profile_setup_page.dart';
 import 'package:fitmonster/core/theme/app_theme.dart';
 
 /// Экран журнала питания за день
@@ -51,6 +54,50 @@ class _FoodLogPageState extends State<FoodLogPage> {
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: GlassTheme.gradientTop,
+            onPrimary: Colors.white,
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(foregroundColor: Colors.black),
+          ),
+          inputDecorationTheme: InputDecorationThemeData(
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: GlassTheme.gradientTop),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: GlassTheme.gradientTop, width: 2),
+            ),
+            labelStyle: const TextStyle(color: GlassTheme.gradientTop),
+            floatingLabelStyle: const TextStyle(color: GlassTheme.gradientTop),
+            hintStyle: const TextStyle(color: GlassTheme.gradientTop),
+          ),
+          dialogTheme: DialogThemeData(
+            shape: RoundedRectangleBorder(
+              side: const BorderSide(color: GlassTheme.gradientTop, width: 2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            titleTextStyle: GlassTheme.titleStyle.copyWith(
+              color: GlassTheme.gradientTop,
+              fontSize: 20,
+            ),
+          ),
+          datePickerTheme: DatePickerThemeData(
+            headerHeadlineStyle: GlassTheme.titleStyle.copyWith(
+              color: GlassTheme.gradientTop,
+              fontSize: 24,
+            ),
+            headerHelpStyle: GlassTheme.bodyStyle.copyWith(
+              color: GlassTheme.gradientTop,
+            ),
+          ),
+        ),
+        child: child!,
+      ),
     );
 
     if (picked != null && picked != _selectedDate) {
@@ -76,18 +123,29 @@ class _FoodLogPageState extends State<FoodLogPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.chevron_left),
+              icon: const Icon(Icons.chevron_left, color: GlassTheme.textPrimary),
               onPressed: () => _navigateDate(-1),
               tooltip: 'Предыдущий день',
             ),
-            Text(_formatDate(_selectedDate)),
+            Text(
+              _formatDate(_selectedDate),
+              style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+            ),
             IconButton(
-              icon: const Icon(Icons.chevron_right),
+              icon: Icon(
+                Icons.chevron_right,
+                color: _selectedDate.isBefore(DateTime.now().add(const Duration(days: 364)))
+                    ? GlassTheme.textPrimary
+                    : GlassTheme.textSecondary,
+              ),
               onPressed: _selectedDate.isBefore(DateTime.now().add(const Duration(days: 364)))
                   ? () => _navigateDate(1)
                   : null,
@@ -97,47 +155,17 @@ class _FoodLogPageState extends State<FoodLogPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Изменить профиль',
-            onPressed: () async {
-              // Открыть настройки профиля
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfileSetupPage(),
-                ),
-              );
-              
-              // Если профиль обновлен, вызвать callback
-              if (result == true && mounted) {
-                widget.onProfileUpdated?.call();
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
+            icon: const Icon(Icons.calendar_today, color: GlassTheme.textPrimary),
             tooltip: 'Выбрать дату',
             onPressed: () => _selectDate(),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Прогресс калорий
-          _buildCalorieProgress(),
-          
-          // Макронутриенты
-          _buildMacrosProgress(),
-          
-          const Divider(height: 1),
-          
-          // Список приемов пищи (всегда показываем все приёмы)
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildMealsList(),
-          ),
-        ],
+      body: Container(
+        decoration: const BoxDecoration(gradient: GlassTheme.scaffoldGradient),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: GlassTheme.glowCyan))
+            : _buildMealsList(),
       ),
     );
   }
@@ -224,28 +252,29 @@ class _FoodLogPageState extends State<FoodLogPage> {
 
   Widget _buildMealsList() {
     return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: [
         ...MealType.values.map((mealType) {
           final mealLogs = _summary.getLogsByMealType(mealType);
           final mealCalories = _summary.getCaloriesByMealType(mealType);
-          
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ExpansionTile(
-              leading: Text(
-                mealType.emoji,
-                style: const TextStyle(fontSize: 32),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: GlassCard(
+              child: ExpansionTile(
+                leading: Text(mealType.emoji, style: const TextStyle(fontSize: 28)),
+                title: Text(
+                  mealType.nameRu,
+                  style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                ),
+                subtitle: Text('$mealCalories ккал', style: GlassTheme.bodyStyle.copyWith(fontSize: 13)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.add, color: GlassTheme.glowCyan),
+                  onPressed: () => _showAddFoodDialog(mealType: mealType),
+                ),
+                iconColor: GlassTheme.textPrimary,
+                collapsedIconColor: GlassTheme.textSecondary,
+                children: mealLogs.map((log) => _buildFoodLogTile(log)).toList(),
               ),
-              title: Text(
-                mealType.nameRu,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              subtitle: Text('$mealCalories ккал'),
-              trailing: IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () => _showAddFoodDialog(mealType: mealType),
-              ),
-              children: mealLogs.map((log) => _buildFoodLogTile(log)).toList(),
             ),
           );
         }),
@@ -255,13 +284,14 @@ class _FoodLogPageState extends State<FoodLogPage> {
 
   Widget _buildFoodLogTile(FoodLog log) {
     return ListTile(
-      leading: const CircleAvatar(
-        backgroundColor: AppTheme.primaryGreen,
-        child: Icon(Icons.restaurant, color: Colors.white),
+      leading: CircleAvatar(
+        backgroundColor: GlassTheme.glowCyan.withOpacity(0.3),
+        child: const Icon(Icons.restaurant, color: GlassTheme.glowCyan, size: 20),
       ),
-      title: Text(log.foodName),
+      title: Text(log.foodName, style: GlassTheme.titleStyle.copyWith(fontSize: 14)),
       subtitle: Text(
         '${log.grams.toStringAsFixed(0)}г • ${log.calories} ккал',
+        style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
       ),
       trailing: PopupMenuButton(
         itemBuilder: (context) => [
@@ -292,6 +322,12 @@ class _FoodLogPageState extends State<FoodLogPage> {
         mealType: mealType ?? MealType.breakfast,
         onAdd: (log) async {
           await DietService.addFoodLog(log);
+          final userId = AuthService().currentUserId;
+          if (userId != null) {
+            try {
+              await StatsService().updateDietLogStreak(userId);
+            } catch (_) {}
+          }
           await _loadLogs();
           
           if (mounted) {

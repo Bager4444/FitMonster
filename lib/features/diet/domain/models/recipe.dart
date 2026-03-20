@@ -137,8 +137,8 @@ class Recipe extends HiveObject {
   }
 }
 
-/// Ингредиент рецепта
-@HiveType(typeId: 11)
+/// Ингредиент рецепта (typeId 14 — 11 занят RepData)
+@HiveType(typeId: 14)
 class RecipeIngredient extends HiveObject {
   @HiveField(0)
   final String foodId; // ID продукта из базы (может быть null если продукт не найден)

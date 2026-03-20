@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "237979256616",
+    "project_id": "fitmonster-17e46",
+    "storage_bucket": "fitmonster-17e46.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:237979256616:android:0b0eea06efda696ffef21d",
+        "android_client_info": {
+          "package_name": "com.fitmonster.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDq-sgYjKTrP7vI-5FIwW5xyj39X8XSzsY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

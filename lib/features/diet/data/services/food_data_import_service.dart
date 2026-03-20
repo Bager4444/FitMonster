@@ -192,24 +192,39 @@ class FoodDataImportService {
       }
 
       final jsonData = json.decode(jsonString) as List<dynamic>;
-      print('📥 Импорт локальных продуктов: ${jsonData.length} записей');
-
       final foodsBox = Hive.box<FoodItem>(HiveService.foodsBox);
       final barcodesBox = Hive.box<String>(HiveService.barcodesBox);
 
+      const batchSize = 150;
+      final foodBatch = <String, FoodItem>{};
+      final barcodeBatch = <String, String>{};
       int imported = 0;
       int skipped = 0;
+
+      Future<void> flushBatch() async {
+        if (foodBatch.isNotEmpty) {
+          await foodsBox.putAll(foodBatch);
+          foodBatch.clear();
+        }
+        if (barcodeBatch.isNotEmpty) {
+          await barcodesBox.putAll(barcodeBatch);
+          barcodeBatch.clear();
+        }
+      }
 
       for (int i = 0; i < jsonData.length; i++) {
         try {
           final raw = jsonData[i] as Map<String, dynamic>;
           final food = _createFoodItemFromLocalJson(raw);
           if (food != null) {
-            await foodsBox.put(food.id, food);
+            foodBatch[food.id] = food;
             if (food.barcode != null && food.barcode!.isNotEmpty) {
-              await barcodesBox.put(food.barcode!, food.id);
+              barcodeBatch[food.barcode!] = food.id;
             }
             imported++;
+            if (foodBatch.length >= batchSize) {
+              await flushBatch();
+            }
           } else {
             skipped++;
           }
@@ -217,14 +232,11 @@ class FoodDataImportService {
             onProgress(i + 1, jsonData.length);
           }
         } catch (e) {
-          print('⚠️ Ошибка при обработке записи ${i + 1}: $e');
           skipped++;
         }
       }
-
-      print('✅ Локальный импорт: $imported импортировано, $skipped пропущено');
+      await flushBatch();
     } catch (e) {
-      print('❌ Ошибка импорта локального JSON: $e');
       rethrow;
     }
   }
@@ -299,35 +311,38 @@ class FoodDataImportService {
         jsonString = await file.readAsString();
       }
 
-      print('🔄 Парсинг JSON рецептов...');
       final jsonData = json.decode(jsonString) as List<dynamic>;
-      print('✅ JSON рецептов распарсен, записей: ${jsonData.length}');
-      print('📥 Начало импорта рецептов: ${jsonData.length} записей');
-
       final recipesBox = Hive.box(HiveService.recipesBox) as Box<Recipe>;
 
+      const batchSize = 100;
+      final recipeBatch = <String, Recipe>{};
       int imported = 0;
       int skipped = 0;
+
+      Future<void> flushRecipes() async {
+        if (recipeBatch.isNotEmpty) {
+          await recipesBox.putAll(recipeBatch);
+          recipeBatch.clear();
+        }
+      }
 
       for (int i = 0; i < jsonData.length; i++) {
         try {
           final recipeData = jsonData[i] as Map<String, dynamic>;
           final recipe = Recipe.fromMap(recipeData);
-          
-          await recipesBox.put(recipe.id, recipe);
+          recipeBatch[recipe.id] = recipe;
           imported++;
-
-          // Прогресс
+          if (recipeBatch.length >= batchSize) {
+            await flushRecipes();
+          }
           if (onProgress != null && (i + 1) % 50 == 0) {
             onProgress(i + 1, jsonData.length);
           }
         } catch (e) {
-          print('⚠️ Ошибка при обработке рецепта ${i + 1}: $e');
           skipped++;
         }
       }
-
-      print('✅ Импорт рецептов завершен: $imported импортировано, $skipped пропущено');
+      await flushRecipes();
     } catch (e) {
       print('❌ Ошибка импорта рецептов: $e');
       rethrow;

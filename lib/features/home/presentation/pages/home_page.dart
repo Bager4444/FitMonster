@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:fitmonster/core/theme/theme_provider.dart';
-import 'package:fitmonster/core/widgets/theme_toggle_button.dart';
+import 'package:fitmonster/core/theme/glass_theme.dart';
+import 'package:fitmonster/core/providers/nav_index_provider.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/exercises_page.dart';
 import 'package:fitmonster/features/diet/presentation/pages/diet_page.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/workout_complexes_page.dart';
 import 'package:fitmonster/features/profile/presentation/pages/profile_page.dart';
 
-/// Главная страница с навигацией
+/// Главная страница: Deep Blue градиент, плавающая стеклянная навигация.
+/// Вкладки создаются лениво — только при первом открытии, чтобы не строить все экраны при старте.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -17,148 +18,142 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0;
+  static const double _navBottomMargin = 20;
+  static const double _navHorizontalMargin = 8;
 
-  // Используем IndexedStack для сохранения состояния вкладок
-  final List<Widget> _pages = const [
-    ExercisesPage(),
-    WorkoutComplexesPage(),
-    DietPage(),
-    ProfilePage(),
-  ];
+  final List<Widget?> _cachedTabs = [null, null]; // только Упражнения и Комплексы кэшируем
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            systemOverlayStyle: SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
-              statusBarBrightness: themeProvider.isDarkMode ? Brightness.dark : Brightness.light,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        extendBody: true,
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          children: [
+            GlassTheme.buildScaffoldBackground(),
+            SafeArea(
+              top: true,
+              bottom: false,
+              child: Consumer<NavIndexProvider>(
+                builder: (context, nav, _) {
+                  final i = nav.index;
+                  if (i < 2 && _cachedTabs[i] == null) {
+                    _cachedTabs[i] = i == 0 ? const ExercisesPage() : const WorkoutComplexesPage();
+                  }
+                  return IndexedStack(
+                    index: i,
+                    children: [
+                      _cachedTabs[0] ?? const SizedBox.shrink(),
+                      _cachedTabs[1] ?? const SizedBox.shrink(),
+                      DietPage(isCurrentTab: i == 2),
+                      ProfilePage(isCurrentTab: i == 3),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-          extendBodyBehindAppBar: true,
-          body: Container(
+            Positioned(
+              left: _navHorizontalMargin,
+              right: _navHorizontalMargin,
+              bottom: _navBottomMargin + MediaQuery.of(context).padding.bottom,
+              child: _FloatingNavCapsule(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingNavCapsule extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      borderRadius: 28,
+      child: Consumer<NavIndexProvider>(
+        builder: (context, nav, _) => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(child: _NavItem(icon: Icons.fitness_center, label: 'Упражнения', index: 0)),
+            Expanded(child: _NavItem(icon: Icons.view_list, label: 'Комплексы', index: 1)),
+            Expanded(child: _NavItem(icon: Icons.restaurant, label: 'Диета', index: 2)),
+            Expanded(child: _NavItem(icon: Icons.person, label: 'Профиль', index: 3)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.index,
+  });
+
+  final IconData icon;
+  final String label;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<NavIndexProvider>(
+      builder: (context, nav, _) {
+        final isActive = nav.index == index;
+        return GestureDetector(
+          onTap: () => nav.setIndex(index),
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             decoration: BoxDecoration(
-              gradient: themeProvider.currentGradient,
+              color: isActive
+                  ? GlassTheme.glowCyan.withOpacity(0.2)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: GlassTheme.glowCyan.withOpacity(0.5),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                      ),
+                    ]
+                  : null,
             ),
-            child: IndexedStack(
-              index: _currentIndex,
-              children: _pages,
-            ),
-          ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode 
-                  ? const Color(0xFF1E293B).withValues(alpha: 0.95)
-                  : Colors.white.withValues(alpha: 0.95),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Container(
-                height: 70,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(
-                      icon: Icons.fitness_center,
-                      label: 'Упражнения',
-                      index: 0,
-                      currentIndex: _currentIndex,
-                      themeProvider: themeProvider,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    color: isActive ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+                    size: 22,
+                  ),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: isActive ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      ),
                     ),
-                    _buildNavItem(
-                      icon: Icons.view_list,
-                      label: 'Комплексы',
-                      index: 1,
-                      currentIndex: _currentIndex,
-                      themeProvider: themeProvider,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.restaurant,
-                      label: 'Диета',
-                      index: 2,
-                      currentIndex: _currentIndex,
-                      themeProvider: themeProvider,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.person,
-                      label: 'Профиль',
-                      index: 3,
-                      currentIndex: _currentIndex,
-                      themeProvider: themeProvider,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
         );
       },
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-    required int currentIndex,
-    required ThemeProvider themeProvider,
-  }) {
-    final isSelected = index == currentIndex;
-    final color = isSelected
-        ? (themeProvider.isDarkMode ? Colors.white : const Color(0xFF4CAF50))
-        : (themeProvider.isDarkMode ? Colors.white54 : Colors.grey[600]!);
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (themeProvider.isDarkMode
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : const Color(0xFF4CAF50).withValues(alpha: 0.1))
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

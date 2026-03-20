@@ -11,7 +11,6 @@
 migrate_working_dir/
 
 *.swp
-profile
 
 DerivedData/
 
@@ -49,3 +48,8 @@ app.*.map.json
 # Exclude Dev2 branch files and documentation
 FitMonster-master/
 ДОКУМЕНТАЦИЯ_ПРОЕКТА.md
+
+# Flutter / IDE generated
+flutter_*.log
+flutter_analysis_report.json
+flutter_input.txt

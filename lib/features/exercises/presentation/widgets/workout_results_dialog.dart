@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/features/exercises/domain/models/workout_session.dart';
 
 /// Диалог с результатами тренировки
@@ -42,7 +43,7 @@ class WorkoutResultsDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.green,
+                color: GlassTheme.gradientTop,
                 borderRadius: BorderRadius.circular(50),
               ),
               child: const Icon(
@@ -59,7 +60,7 @@ class WorkoutResultsDialog extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.green,
+                color: GlassTheme.gradientTop,
               ),
               textAlign: TextAlign.center,
             ),
@@ -149,6 +150,7 @@ class WorkoutResultsDialog extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -162,8 +164,8 @@ class WorkoutResultsDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                      backgroundColor: GlassTheme.gradientTop,
+                      foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitmonster/core/theme/theme_provider.dart';
+import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/features/exercises/data/workout_complexes_database.dart';
 import 'package:fitmonster/features/exercises/data/exercises_database.dart';
 import 'package:fitmonster/features/exercises/domain/models/workout_complex.dart';
 import 'package:fitmonster/features/exercises/utils/exercise_colors.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/complex_workout_page.dart';
-import 'package:fitmonster/features/exercises/presentation/pages/fitness_assessment_page.dart';
 
 /// Страница комплексов упражнений
 class WorkoutComplexesPage extends StatefulWidget {
@@ -20,10 +20,13 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+  bool _animationDone = false;
+
+  final Map<String, String> _exerciseNameCache = {};
+
   String _selectedCategory = 'Все';
   String _selectedDifficulty = 'Все';
-  
+
   final List<String> _categories = [
     'Все',
     'Силовые',
@@ -43,19 +46,34 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() => _animationDone = true);
+      }
+    });
     _animationController.forward();
+  }
+
+  List<WorkoutComplex> _getFilteredComplexes() {
+    final complexes = WorkoutComplexesDatabase.getAllComplexes();
+    return complexes.where((complex) {
+      final categoryMatch = _selectedCategory == 'Все' || complex.categoryName == _selectedCategory;
+      final difficultyMatch = _selectedDifficulty == 'Все' || complex.difficultyName == _selectedDifficulty;
+      return categoryMatch && difficultyMatch;
+    }).toList();
+  }
+
+  String _getExerciseName(String exerciseId) {
+    return _exerciseNameCache.putIfAbsent(
+      exerciseId,
+      () => ExercisesDatabase.getExerciseById(exerciseId)?.nameRu ?? exerciseId,
+    );
   }
 
   @override
@@ -68,84 +86,33 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: SafeArea(
-                top: true,
-                bottom: true,
-                child: _buildContent(themeProvider),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildContent(ThemeProvider themeProvider) {
-    return CustomScrollView(
-      slivers: [
-        // Header
-        SliverToBoxAdapter(
-          child: _buildHeader(themeProvider),
-        ),
-        
-        // Filters
-        SliverToBoxAdapter(
-          child: _buildFilters(themeProvider),
-        ),
-        
-        // Кнопка фитнес-теста
-        SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const FitnessAssessmentPage(),
+        final filtered = _getFilteredComplexes();
+        final content = SafeArea(
+          top: true,
+          bottom: true,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: _buildHeader(themeProvider)),
+              SliverToBoxAdapter(child: _buildFilters(themeProvider)),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildComplexCard(filtered[index], index),
+                    ),
+                    childCount: filtered.length,
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.assessment, size: 24),
-                  SizedBox(width: 8),
-                  Text(
-                    'Пройти фитнес-тест',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
           ),
-        ),
-        
-        // Complexes Grid
-        SliverToBoxAdapter(
-          child: _buildComplexesGrid(themeProvider),
-        ),
-        
-        // Bottom Spacing
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 100),
-        ),
-      ],
+        );
+        if (_animationDone) return content;
+        return FadeTransition(opacity: _fadeAnimation, child: content);
+      },
     );
   }
 
@@ -303,74 +270,26 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
     );
   }
 
-  Widget _buildComplexesGrid(ThemeProvider themeProvider) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          _buildComplexesList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildComplexesList() {
-    final complexes = WorkoutComplexesDatabase.getAllComplexes();
-    
-    // Фильтрация
-    final filteredComplexes = complexes.where((complex) {
-      final categoryMatch = _selectedCategory == 'Все' || 
-          complex.categoryName == _selectedCategory;
-      final difficultyMatch = _selectedDifficulty == 'Все' || 
-          complex.difficultyName == _selectedDifficulty;
-      
-      return categoryMatch && difficultyMatch;
-    }).toList();
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: filteredComplexes.length,
-      itemBuilder: (context, index) {
-        final complex = filteredComplexes[index];
-        return _buildComplexCard(complex, index);
-      },
-    );
-  }
-
   Widget _buildComplexCard(WorkoutComplex complex, int index) {
-    // Получаем цвета в зависимости от типа комплекса
-    final colorPair = ExerciseColors.getColorsForComplexType(complex.exerciseIds);
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: colorPair,
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showWorkoutSettingsDialog(complex),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: colorPair[0].withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16), // Уменьшаем отступы
-        child: Column(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                // Emoji
                 Container(
-                  width: 50, // Уменьшаем размер
+                  width: 50,
                   height: 50,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
@@ -379,73 +298,55 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                   child: Center(
                     child: Text(
                       complex.imageUrl,
-                      style: const TextStyle(fontSize: 28), // Уменьшаем размер
+                      style: const TextStyle(fontSize: 28),
                     ),
                   ),
                 ),
-                
-                const SizedBox(width: 12), // Уменьшаем отступ
-                
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         complex.name,
-                        style: const TextStyle(
-                          fontSize: 16, // Уменьшаем размер
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: GlassTheme.titleStyle.copyWith(fontSize: 16),
                       ),
-                      const SizedBox(height: 2), // Уменьшаем отступ
+                      const SizedBox(height: 2),
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), // Уменьшаем отступы
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               complex.categoryName,
-                              style: const TextStyle(
-                                fontSize: 10, // Уменьшаем размер
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6), // Уменьшаем отступ
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              ExerciseColors.getComplexType(complex.exerciseIds),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: GlassTheme.bodyStyle.copyWith(fontSize: 10, fontWeight: FontWeight.w500),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), // Уменьшаем отступы
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              ExerciseColors.getComplexType(complex.exerciseIds),
+                              style: GlassTheme.bodyStyle.copyWith(fontSize: 10, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               complex.difficultyName,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: GlassTheme.bodyStyle.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ],
@@ -455,21 +356,12 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                 ),
               ],
             ),
-            
-            const SizedBox(height: 12), // Уменьшаем отступ
-            
+            const SizedBox(height: 12),
             Text(
               complex.description,
-              style: TextStyle(
-                fontSize: 12, // Уменьшаем размер
-                color: Colors.white.withValues(alpha: 0.9),
-                height: 1.3, // Уменьшаем межстрочный интервал
-              ),
+              style: GlassTheme.bodyStyle.copyWith(fontSize: 12, height: 1.3),
             ),
-            
-            const SizedBox(height: 12), // Уменьшаем отступ
-            
-            // Список упражнений
+            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -481,18 +373,13 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                 children: [
                   Text(
                     'Упражнения:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
+                    style: GlassTheme.titleStyle.copyWith(fontSize: 14),
                   ),
                   const SizedBox(height: 8),
                   ...complex.exerciseIds.asMap().entries.map((entry) {
-                    final index = entry.key;
+                    final idx = entry.key;
                     final exerciseId = entry.value;
-                    final exercise = ExercisesDatabase.getExerciseById(exerciseId);
-                    
+                    final name = _getExerciseName(exerciseId);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
@@ -506,23 +393,16 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                             ),
                             child: Center(
                               child: Text(
-                                '${index + 1}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
+                                '${idx + 1}',
+                                style: GlassTheme.titleStyle.copyWith(fontSize: 12),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              exercise?.nameRu ?? exerciseId,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
+                              name,
+                              style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
                             ),
                           ),
                         ],
@@ -532,281 +412,259 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                 ],
               ),
             ),
-            
             const SizedBox(height: 16),
-            
             Row(
               children: [
-                Icon(
-                  Icons.timer,
-                  color: Colors.white.withValues(alpha: 0.8),
-                  size: 16,
-                ),
+                Icon(Icons.timer, color: GlassTheme.textSecondary, size: 16),
                 const SizedBox(width: 4),
                 Text(
                   '${complex.estimatedDuration} мин',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
+                  style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
                 ),
                 const SizedBox(width: 16),
-                Icon(
-                  Icons.fitness_center,
-                  color: Colors.white.withValues(alpha: 0.8),
-                  size: 16,
-                ),
+                Icon(Icons.fitness_center, color: GlassTheme.textSecondary, size: 16),
                 const SizedBox(width: 4),
                 Text(
                   '${complex.exerciseIds.length} упражнений',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
+                  style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
                 ),
               ],
             ),
-            
             const SizedBox(height: 16),
-            
-            // Кнопка начать комплекс
-            GestureDetector(
-              onTap: () => _showWorkoutSettingsDialog(complex),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.play_arrow,
-                      color: colorPair[0],
-                      size: 20,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.play_arrow, color: Colors.black, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Начать комплекс',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Начать комплекс',
-                      style: TextStyle(
-                        color: colorPair[0],
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
+    ),
     );
   }
 
-  /// Показать диалог настроек тренировки
+  /// Показать диалог настроек тренировки (стиль Deep Blue Glassmorphism)
   void _showWorkoutSettingsDialog(WorkoutComplex complex) {
     int selectedRestTime = 30; // По умолчанию 30 секунд
-    
+
     showDialog(
       context: context,
-      builder: (context) => Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return AlertDialog(
-            backgroundColor: themeProvider.cardColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF2979FF),
+                Color(0xFF0D1B2A),
+              ],
             ),
-            title: Text(
-              'Настройки тренировки',
-              style: TextStyle(
-                color: themeProvider.textColor,
-                fontWeight: FontWeight.bold,
-              ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1.5,
             ),
-            content: StatefulBuilder(
-              builder: (context, setDialogState) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Информация о комплексе
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: themeProvider.buttonColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+          ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: StatefulBuilder(
+                builder: (context, setDialogState) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Настройки тренировки',
+                        style: GlassTheme.titleStyle.copyWith(fontSize: 22),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            complex.name,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: themeProvider.textColor,
-                            ),
+                      const SizedBox(height: 20),
+                      // Информация о комплексе (стеклянная карточка)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.fitness_center,
-                                size: 16,
-                                color: themeProvider.secondaryTextColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${complex.exerciseIds.length} упражнений',
-                                style: TextStyle(
-                                  color: themeProvider.secondaryTextColor,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Icon(
-                                Icons.timer,
-                                size: 16,
-                                color: themeProvider.secondaryTextColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '~${complex.estimatedDuration} мин',
-                                style: TextStyle(
-                                  color: themeProvider.secondaryTextColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Выбор времени перерыва
-                    Text(
-                      'Время перерыва между упражнениями:',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: themeProvider.textColor,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Варианты времени перерыва
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [15, 30, 45, 60, 90, 120].map((seconds) {
-                        final isSelected = selectedRestTime == seconds;
-                        return GestureDetector(
-                          onTap: () {
-                            setDialogState(() {
-                              selectedRestTime = seconds;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              complex.name,
+                              style: GlassTheme.titleStyle.copyWith(fontSize: 18),
                             ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? themeProvider.buttonColor
-                                  : themeProvider.cardColor,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.fitness_center,
+                                  size: 16,
+                                  color: GlassTheme.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${complex.exerciseIds.length} упражнений',
+                                  style: GlassTheme.bodyStyle,
+                                ),
+                                const SizedBox(width: 16),
+                                Icon(
+                                  Icons.timer,
+                                  size: 16,
+                                  color: GlassTheme.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '~${complex.estimatedDuration} мин',
+                                  style: GlassTheme.bodyStyle,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Время перерыва между упражнениями:',
+                        style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [15, 30, 45, 60, 90, 120].map((seconds) {
+                          final isSelected = selectedRestTime == seconds;
+                          return GestureDetector(
+                            onTap: () {
+                              setDialogState(() {
+                                selectedRestTime = seconds;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
                                 color: isSelected
-                                    ? themeProvider.buttonColor
-                                    : themeProvider.cardBorderColor,
+                                    ? GlassTheme.glowCyan
+                                    : Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? GlassTheme.glowCyan
+                                      : Colors.white.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Text(
+                                '${seconds}с',
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.black
+                                      : GlassTheme.textPrimary,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
                               ),
                             ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      // Подсказка: иконка info чёрная по запросу (светлый фон для читаемости)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 20,
+                              color: Colors.black,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Вы сможете изменить время перерыва во время тренировки',
+                                style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
                             child: Text(
-                              '${seconds}с',
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : themeProvider.textColor,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
+                              'Отмена',
+                              style: TextStyle(color: GlassTheme.textSecondary),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Подсказка
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: themeProvider.accentColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 16,
-                            color: themeProvider.accentColor,
                           ),
                           const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Вы сможете изменить время перерыва во время тренировки',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: themeProvider.secondaryTextColor,
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ComplexWorkoutPage(
+                                    complex: complex,
+                                    initialRestTime: selectedRestTime,
+                                  ),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: GlassTheme.glowCyan,
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
+                            child: const Text('Начать тренировку'),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Отмена',
-                  style: TextStyle(color: themeProvider.secondaryTextColor),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ComplexWorkoutPage(
-                        complex: complex,
-                        initialRestTime: selectedRestTime,
-                      ),
-                    ),
+                    ],
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: themeProvider.buttonColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Начать тренировку'),
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -90,7 +90,7 @@ class RecipeAdapter extends TypeAdapter<Recipe> {
 
 class RecipeIngredientAdapter extends TypeAdapter<RecipeIngredient> {
   @override
-  final int typeId = 11;
+  final int typeId = 14;
 
   @override
   RecipeIngredient read(BinaryReader reader) {
