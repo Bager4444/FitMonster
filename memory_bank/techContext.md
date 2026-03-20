@@ -55,7 +55,8 @@
 - ОС разработки: Windows
 - Пакетный менеджер: **bun** (для JS-инструментов), `flutter pub` для Dart
 - Линтинг: `flutter_lints` + `analysis_options.yaml`
-- VCS: Git, ветка `Dev2`
+- VCS: Git, ветка `Dev1`
+- Remote: `origin` → `https://github.com/Bager4444/FitMonster.git`
 
 ## CI/CD
 - GitHub Actions: `.github/` (детали требуют уточнения)

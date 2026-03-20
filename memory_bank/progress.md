@@ -25,8 +25,16 @@
 2. ⚠️ Firebase показывает предупреждения на Web
 3. ⚠️ Windows требует Developer Mode для запуска
 4. ⚠️ Тестовое покрытие ~15% (цель: 80%)
+5. ⚠️ В текущем окружении отсутствует Flutter SDK (`flutter` не найден в PATH), поэтому `flutter pub get` не выполняется
 
 ## Changelog
+
+### 2026-03-20 — Актуализация Memory Bank и проверка зависимостей
+- Подтверждено применение правил из `AGENTS.md`
+- Проверена структура `memory_bank`: обязательные файлы присутствуют
+- Проведён экспресс-анализ архитектуры по `README.md` и `docs/README.md`
+- Зафиксирован GitHub репозиторий: `https://github.com/Bager4444/FitMonster.git`
+- Попытка установить зависимости через `flutter pub get` завершилась ошибкой: Flutter SDK отсутствует в окружении
 
 ### 2026-03-20 — Инициализация Memory Bank
 - Создана структура `/memory_bank/` (Режим В)
@@ -47,8 +55,8 @@
 ## Контроль изменений
 
 ```
-last_checked_commit: 80a2edf
-branch: Dev2
+last_checked_commit: 137fcb8
+branch: Dev1
 date: 2026-03-20
-message: feat: AI assistant with DeepSeek API integration and extended knowledge base
+message: проверка структуры Memory Bank и окружения зависимостей
 ```
