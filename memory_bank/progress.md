@@ -76,8 +76,8 @@
 ## Контроль изменений
 
 ```
-last_checked_commit: 4259b8f
+last_checked_commit: 22b954f
 branch: Dev2
-date: 2026-03-21
-message: feat: учётная запись пользователя, профиль, упражнения и AI
+date: 2026-03-23
+message: feat: Firestore синк аккаунта, метрик и диеты; Firebase ede5c; AI на главной
 ```
