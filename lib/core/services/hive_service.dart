@@ -18,11 +18,14 @@ class HiveService {
   static const String workoutsBox = 'workouts';
   static const String mealsBox = 'meals';
   static const String settingsBox = 'settings';
+  static const String usersBox = 'users';
   static const String foodsBox = 'foods'; // База продуктов
   static const String recipesBox = 'recipes'; // База рецептов
   static const String barcodesBox = 'barcodes'; // Маппинг штрих-кодов -> foodId
-  static const String favoritesBox = 'favorites'; // Избранные продукты (userId -> [foodIds])
-  static const String recentBox = 'recent'; // Недавно использованные (userId -> [foodIds])
+  static const String favoritesBox =
+      'favorites'; // Избранные продукты (userId -> [foodIds])
+  static const String recentBox =
+      'recent'; // Недавно использованные (userId -> [foodIds])
   static const String plansBox = 'plans'; // Планы питания
   static const String templatesBox = 'templates'; // Шаблоны приемов пищи
   static const String foodLogsBox = 'food_logs'; // Записи питания (дневник)
@@ -31,7 +34,7 @@ class HiveService {
   static Future<void> initialize() async {
     try {
       await Hive.initFlutter();
-      
+
       // Регистрация адаптеров
       if (!Hive.isAdapterRegistered(1)) {
         Hive.registerAdapter(UserProfileAdapter());
@@ -75,11 +78,11 @@ class HiveService {
       if (!Hive.isAdapterRegistered(14)) {
         Hive.registerAdapter(RecipeIngredientAdapter());
       }
-      
+
       // Открыть боксы с правильными типами
       // Используем проверку, чтобы не открывать уже открытые коробки
       final boxesToOpen = <Future>[];
-      
+
       if (!Hive.isBoxOpen(userBox)) {
         boxesToOpen.add(Hive.openBox(userBox));
       }
@@ -91,6 +94,9 @@ class HiveService {
       }
       if (!Hive.isBoxOpen(settingsBox)) {
         boxesToOpen.add(Hive.openBox(settingsBox));
+      }
+      if (!Hive.isBoxOpen(usersBox)) {
+        boxesToOpen.add(Hive.openBox(usersBox));
       }
       if (!Hive.isBoxOpen(foodsBox)) {
         boxesToOpen.add(Hive.openBox<FoodItem>(foodsBox));
@@ -116,7 +122,7 @@ class HiveService {
       if (!Hive.isBoxOpen(foodLogsBox)) {
         boxesToOpen.add(Hive.openBox<FoodLog>(foodLogsBox));
       }
-      
+
       if (boxesToOpen.isNotEmpty) {
         await Future.wait(boxesToOpen);
       }
@@ -161,10 +167,7 @@ class HiveService {
   }
 
   /// Удалить данные
-  static Future<void> delete({
-    required String box,
-    required String key,
-  }) async {
+  static Future<void> delete({required String box, required String key}) async {
     try {
       await getBox(box).delete(key);
     } catch (e) {
@@ -191,6 +194,7 @@ class HiveService {
         clearBox(workoutsBox),
         clearBox(mealsBox),
         clearBox(settingsBox),
+        clearBox(usersBox),
         clearBox(foodsBox),
         clearBox(recipesBox),
         clearBox(barcodesBox),

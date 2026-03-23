@@ -77,7 +77,13 @@ class _ExercisesPageState extends State<ExercisesPage>
         : ExercisesDatabase.searchExercises(_searchQueryDebounced.trim());
     final filtered = _selectedCategory == 'Все'
         ? exercises
-        : exercises.where((e) => ExerciseColors.getCategoryForExercise(e.id) == _selectedCategory).toList();
+        : exercises
+              .where(
+                (e) =>
+                    ExerciseColors.getCategoryForExercise(e.id) ==
+                    _selectedCategory,
+              )
+              .toList();
     _cachedFilterKey = key;
     _cachedFilteredExercises = filtered;
     return filtered;
@@ -119,12 +125,8 @@ class _ExercisesPageState extends State<ExercisesPage>
     if (_animationDone) {
       return content;
     }
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: content,
-    );
+    return FadeTransition(opacity: _fadeAnimation, child: content);
   }
-
 
   Widget _buildHeroSection() {
     return Padding(
@@ -160,7 +162,9 @@ class _ExercisesPageState extends State<ExercisesPage>
           final category = _categories[index];
           final isSelected = category == _selectedCategory;
           return Padding(
-            padding: EdgeInsets.only(right: index < _categories.length - 1 ? 10 : 0),
+            padding: EdgeInsets.only(
+              right: index < _categories.length - 1 ? 10 : 0,
+            ),
             child: GlassContainer(
               onTap: () => setState(() => _selectedCategory = category),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
@@ -169,7 +173,9 @@ class _ExercisesPageState extends State<ExercisesPage>
               child: Text(
                 category,
                 style: TextStyle(
-                  color: isSelected ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+                  color: isSelected
+                      ? GlassTheme.glowCyan
+                      : GlassTheme.textSecondary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -196,8 +202,15 @@ class _ExercisesPageState extends State<ExercisesPage>
         style: const TextStyle(color: GlassTheme.textPrimary, fontSize: 15),
         decoration: InputDecoration(
           hintText: 'Поиск упражнений...',
-          hintStyle: const TextStyle(color: GlassTheme.textSecondary, fontSize: 15),
-          prefixIcon: const Icon(Icons.search, color: GlassTheme.textSecondary, size: 22),
+          hintStyle: const TextStyle(
+            color: GlassTheme.textSecondary,
+            fontSize: 15,
+          ),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: GlassTheme.textSecondary,
+            size: 22,
+          ),
           filled: true,
           fillColor: Colors.transparent,
           border: OutlineInputBorder(
@@ -212,7 +225,10 @@ class _ExercisesPageState extends State<ExercisesPage>
             borderRadius: BorderRadius.circular(20),
             borderSide: const BorderSide(color: GlassTheme.glowCyan),
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 14,
+            horizontal: 16,
+          ),
         ),
       ),
     );
@@ -238,7 +254,11 @@ class _ExercisesPageState extends State<ExercisesPage>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.casino, color: GlassTheme.glowCyan, size: 32),
+                      const Icon(
+                        Icons.casino,
+                        color: GlassTheme.glowCyan,
+                        size: 32,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Случайное',
@@ -258,7 +278,11 @@ class _ExercisesPageState extends State<ExercisesPage>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.replay, color: GlassTheme.glowCyan, size: 32),
+                      const Icon(
+                        Icons.replay,
+                        color: GlassTheme.glowCyan,
+                        size: 32,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Последнее',
@@ -283,8 +307,10 @@ class _ExercisesPageState extends State<ExercisesPage>
     const spacing = 12.0;
     return SliverLayoutBuilder(
       builder: (context, constraints) {
-        final width = (constraints.crossAxisExtent - spacing * (crossCount - 1)) / crossCount;
-        final cellHeight = 180.0;
+        final width =
+            (constraints.crossAxisExtent - spacing * (crossCount - 1)) /
+            crossCount;
+        final cellHeight = 188.0;
         return SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossCount,
@@ -320,10 +346,13 @@ class _ExercisesPageState extends State<ExercisesPage>
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1.5,
+            ),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -336,7 +365,10 @@ class _ExercisesPageState extends State<ExercisesPage>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
-                      child: Text(_getEmojiForExercise(exercise.id), style: const TextStyle(fontSize: 22)),
+                      child: Text(
+                        _getEmojiForExercise(exercise.id),
+                        style: const TextStyle(fontSize: 22),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -365,7 +397,10 @@ class _ExercisesPageState extends State<ExercisesPage>
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(100),
                   border: Border.all(color: Colors.white.withOpacity(0.3)),
@@ -383,12 +418,24 @@ class _ExercisesPageState extends State<ExercisesPage>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ExerciseCameraPage(exercise: exercise),
+                        builder: (context) =>
+                            ExerciseCameraPage(exercise: exercise),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.play_arrow_rounded, color: GlassTheme.glowCyan, size: 18),
-                  label: const Text('Начать', style: TextStyle(color: GlassTheme.glowCyan, fontWeight: FontWeight.bold, fontSize: 13)),
+                  icon: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: GlassTheme.glowCyan,
+                    size: 18,
+                  ),
+                  label: const Text(
+                    'Начать',
+                    style: TextStyle(
+                      color: GlassTheme.glowCyan,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -463,7 +510,7 @@ class _ExercisesPageState extends State<ExercisesPage>
       case 'jump_in_place':
       case 'sit_ups':
         return 1; // Легкий
-      
+
       // Средние упражнения
       case 'pushups':
       case 'lunges':
@@ -478,14 +525,14 @@ class _ExercisesPageState extends State<ExercisesPage>
       case 'lateral_lunges':
       case 'russian_twists':
         return 2; // Средний
-      
+
       // Сложные упражнения
       case 'burpees':
       case 'plank_leg_lifts':
       case 'burpee_pushup':
       case 'single_leg_deadlift':
         return 3; // Сложный
-      
+
       default:
         return 1;
     }
@@ -507,7 +554,8 @@ class _ExercisesPageState extends State<ExercisesPage>
   void _startRandomExercise() {
     final exercises = ExercisesDatabase.getAllExercises();
     if (exercises.isNotEmpty) {
-      final randomExercise = exercises[DateTime.now().millisecond % exercises.length];
+      final randomExercise =
+          exercises[DateTime.now().millisecond % exercises.length];
       if (mounted) {
         Navigator.push(
           context,

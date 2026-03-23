@@ -4,7 +4,9 @@ import 'package:fitmonster/core/widgets/glass_card.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
 import 'package:fitmonster/core/services/stats_service.dart';
+import 'package:fitmonster/core/services/user_account_service.dart';
 import 'package:fitmonster/core/models/user_stats.dart';
+import 'package:fitmonster/core/models/user_account.dart';
 import 'package:fitmonster/features/auth/presentation/pages/auth_page.dart';
 import 'package:fitmonster/features/diet/presentation/pages/profile_setup_page.dart';
 
@@ -21,6 +23,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   String? _loadedUserId;
   UserStats? _userStats;
+  UserAccount? _userAccount;
   String? _nickname;
   List<int> _weekActiveDays = [];
 
@@ -43,24 +46,37 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!force && userId == _loadedUserId) return;
     _loadedUserId = userId;
     final stats = await StatsService().getUserStats(userId);
-    final nickname = HiveService.get(
-      box: HiveService.settingsBox,
-      key: 'nickname_$userId',
-    ) as String?;
+    final account = await UserAccountService().getByUserId(userId);
+    final nickname =
+        HiveService.get(box: HiveService.settingsBox, key: 'nickname_$userId')
+            as String?;
     if (mounted) {
       final weekActive = StatsService.getWeekActiveDays(userId);
       setState(() {
         _userStats = stats;
+        _userAccount = account;
         _nickname = nickname != null && nickname.isNotEmpty ? nickname : null;
         _weekActiveDays = weekActive;
       });
     }
   }
 
-  static const List<String> _dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  static const List<String> _dayLabels = [
+    'Пн',
+    'Вт',
+    'Ср',
+    'Чт',
+    'Пт',
+    'Сб',
+    'Вс',
+  ];
 
   String _getDisplayName(AuthService auth) {
-    if (_nickname != null && _nickname!.trim().isNotEmpty) return _nickname!.trim();
+    if (_userAccount != null && _userAccount!.name.trim().isNotEmpty) {
+      return _userAccount!.name.trim();
+    }
+    if (_nickname != null && _nickname!.trim().isNotEmpty)
+      return _nickname!.trim();
     return auth.currentUserEmail?.split('@').first ?? 'Гость';
   }
 
@@ -69,7 +85,10 @@ class _ProfilePageState extends State<ProfilePage> {
     final auth = AuthService();
     final isLoggedIn = auth.isEmailUser;
     final userId = auth.currentUserId ?? '';
-    if (userId != _loadedUserId) WidgetsBinding.instance.addPostFrameCallback((_) => _loadDataForCurrentUser());
+    if (userId != _loadedUserId)
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _loadDataForCurrentUser(),
+      );
     final displayName = _getDisplayName(auth);
     return SingleChildScrollView(
       padding: EdgeInsets.only(
@@ -81,10 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Профиль',
-            style: GlassTheme.titleStyle.copyWith(fontSize: 28),
-          ),
+          Text('Профиль', style: GlassTheme.titleStyle.copyWith(fontSize: 28)),
           const SizedBox(height: 8),
           Text(
             'Недельная активность и статистика',
@@ -103,7 +119,11 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, String displayName, bool isLoggedIn) {
+  Widget _buildProfileHeader(
+    BuildContext context,
+    String displayName,
+    bool isLoggedIn,
+  ) {
     return GlassCard(
       onTap: () => _showEditNicknameDialog(context, displayName),
       child: Row(
@@ -127,7 +147,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isLoggedIn ? 'Вы вошли в аккаунт' : 'Войдите или зарегистрируйтесь',
+                  isLoggedIn
+                      ? 'Вы вошли в аккаунт'
+                      : 'Войдите или зарегистрируйтесь',
                   style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
                 ),
                 const SizedBox(height: 2),
@@ -144,14 +166,20 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _showEditNicknameDialog(BuildContext context, String currentName) async {
+  Future<void> _showEditNicknameDialog(
+    BuildContext context,
+    String currentName,
+  ) async {
     final controller = TextEditingController(text: _nickname ?? currentName);
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF0D1B2A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Никнейм', style: GlassTheme.titleStyle.copyWith(fontSize: 20)),
+        title: Text(
+          'Никнейм',
+          style: GlassTheme.titleStyle.copyWith(fontSize: 20),
+        ),
         content: TextField(
           controller: controller,
           style: const TextStyle(color: Colors.black, fontSize: 16),
@@ -172,11 +200,16 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Отмена', style: TextStyle(color: GlassTheme.textSecondary)),
+            child: Text(
+              'Отмена',
+              style: TextStyle(color: GlassTheme.textSecondary),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            style: FilledButton.styleFrom(backgroundColor: GlassTheme.gradientTop),
+            style: FilledButton.styleFrom(
+              backgroundColor: GlassTheme.gradientTop,
+            ),
             child: const Text('Сохранить'),
           ),
         ],
@@ -186,7 +219,10 @@ class _ProfilePageState extends State<ProfilePage> {
       final userId = AuthService().currentUserId ?? '';
       if (userId.isNotEmpty) {
         if (result.isEmpty) {
-          await HiveService.delete(box: HiveService.settingsBox, key: 'nickname_$userId');
+          await HiveService.delete(
+            box: HiveService.settingsBox,
+            key: 'nickname_$userId',
+          );
         } else {
           await HiveService.put(
             box: HiveService.settingsBox,
@@ -197,7 +233,13 @@ class _ProfilePageState extends State<ProfilePage> {
       }
       setState(() {
         _nickname = result.isEmpty ? null : result;
+        if (result.isNotEmpty) {
+          _userAccount = _userAccount?.copyWith(name: result);
+        }
       });
+      if (result.isNotEmpty && userId.isNotEmpty) {
+        await UserAccountService().updateProfile(userId: userId, name: result);
+      }
     }
   }
 
@@ -206,10 +248,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Неделя',
-            style: GlassTheme.titleStyle.copyWith(fontSize: 18),
-          ),
+          Text('Неделя', style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -257,9 +296,25 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildStatsGrid() {
     final totalWorkouts = _userStats?.totalWorkouts ?? 0;
     final streak = _userStats?.workoutStreak ?? 0;
+    final totalExercises = _userAccount?.totalExercises ?? 0;
+    final totalMinutes = ((_userAccount?.totalTrainingTimeSec ?? 0) / 60)
+        .round();
+    final avgScore = (_userAccount?.averageScorePercent ?? 0).toStringAsFixed(
+      1,
+    );
+    final worldRank = _userAccount?.worldRank ?? 0;
+    final regionRank = _userAccount?.regionRank ?? 0;
     final stats = [
       _StatItem(Icons.fitness_center, 'Тренировки', '$totalWorkouts'),
       _StatItem(Icons.local_fire_department, 'Серия дней', '$streak'),
+      _StatItem(Icons.repeat, 'Упражнений', '$totalExercises'),
+      _StatItem(Icons.timer, 'Минут в выполнении', '$totalMinutes'),
+      _StatItem(Icons.percent, 'Средний процент', '$avgScore%'),
+      _StatItem(
+        Icons.public,
+        'Рейтинг: мир/регион',
+        '$worldRank / $regionRank',
+      ),
     ];
     return GridView.count(
       shrinkWrap: true,
@@ -267,7 +322,7 @@ class _ProfilePageState extends State<ProfilePage> {
       crossAxisCount: 2,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.1,
+      childAspectRatio: 1.15,
       children: stats.map((s) => _buildStatCard(s)).toList(),
     );
   }
@@ -285,10 +340,7 @@ class _ProfilePageState extends State<ProfilePage> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
-          Text(
-            item.value,
-            style: GlassTheme.titleStyle.copyWith(fontSize: 18),
-          ),
+          Text(item.value, style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
         ],
       ),
     );
@@ -304,9 +356,7 @@ class _ProfilePageState extends State<ProfilePage> {
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const ProfileSetupPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const ProfileSetupPage()),
             );
           },
         ),
@@ -318,9 +368,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onTap: () async {
               await Navigator.push<bool>(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const AuthPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const AuthPage()),
               );
               if (context.mounted) setState(() {});
             },

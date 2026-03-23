@@ -1,6 +1,7 @@
 import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
 import 'package:fitmonster/core/services/stats_service.dart';
+import 'package:fitmonster/core/services/user_account_service.dart';
 import 'package:fitmonster/features/profile/domain/models/app_profile.dart';
 import 'package:fitmonster/features/profile/domain/models/achievement.dart';
 
@@ -14,6 +15,7 @@ String _key(String suffix) {
 class ProfileService {
   final AuthService _auth = AuthService();
   final StatsService _stats = StatsService();
+  final UserAccountService _accounts = UserAccountService();
 
   static const String _userBox = HiveService.userBox;
 
@@ -22,23 +24,40 @@ class ProfileService {
     final userId = _auth.currentUserId;
     if (userId == null) return const AppProfile();
 
-    final name = HiveService.get(box: _userBox, key: _key('display_name')) as String?;
-    final path = HiveService.get(box: _userBox, key: _key('avatar_path')) as String?;
+    final account = await _accounts.getByUserId(userId);
+    final name =
+        HiveService.get(box: _userBox, key: _key('display_name')) as String?;
+    final path =
+        HiveService.get(box: _userBox, key: _key('avatar_path')) as String?;
     return AppProfile(
-      displayName: name ?? 'Спортсмен',
+      displayName: account?.name ?? name ?? 'Спортсмен',
       avatarPath: path,
+      allergies: account?.allergies ?? const [],
+      contraindications: account?.contraindications ?? const [],
     );
   }
 
   Future<void> setDisplayName(String name) async {
-    await HiveService.put(box: _userBox, key: _key('display_name'), value: name);
+    await HiveService.put(
+      box: _userBox,
+      key: _key('display_name'),
+      value: name,
+    );
+    final userId = _auth.currentUserId;
+    if (userId != null) {
+      await _accounts.updateProfile(userId: userId, name: name);
+    }
   }
 
   Future<void> setAvatarPath(String? path) async {
     if (path == null) {
       await HiveService.delete(box: _userBox, key: _key('avatar_path'));
     } else {
-      await HiveService.put(box: _userBox, key: _key('avatar_path'), value: path);
+      await HiveService.put(
+        box: _userBox,
+        key: _key('avatar_path'),
+        value: path,
+      );
     }
   }
 
@@ -80,13 +99,48 @@ class ProfileService {
 
   // ——— Достижения ———
   static const List<Achievement> allAchievements = [
-    Achievement(id: 'first_workout', title: 'Первая тренировка', description: 'Завершите первую тренировку', icon: '🎯'),
-    Achievement(id: 'streak_3', title: 'Три дня подряд', description: 'Тренируйтесь 3 дня подряд', icon: '🔥'),
-    Achievement(id: 'streak_7', title: 'Неделя силы', description: '7 дней подряд', icon: '💪'),
-    Achievement(id: 'workouts_10', title: '10 тренировок', description: 'Всего 10 завершённых тренировок', icon: '⭐'),
-    Achievement(id: 'workouts_50', title: 'Полтинник', description: '50 тренировок', icon: '🏅'),
-    Achievement(id: 'level_5', title: 'Уровень 5', description: 'Достигните 5 уровня', icon: '📈'),
-    Achievement(id: 'early_bird', title: 'Ранняя пташка', description: 'Тренировка до 9:00', icon: '🌅'),
+    Achievement(
+      id: 'first_workout',
+      title: 'Первая тренировка',
+      description: 'Завершите первую тренировку',
+      icon: '🎯',
+    ),
+    Achievement(
+      id: 'streak_3',
+      title: 'Три дня подряд',
+      description: 'Тренируйтесь 3 дня подряд',
+      icon: '🔥',
+    ),
+    Achievement(
+      id: 'streak_7',
+      title: 'Неделя силы',
+      description: '7 дней подряд',
+      icon: '💪',
+    ),
+    Achievement(
+      id: 'workouts_10',
+      title: '10 тренировок',
+      description: 'Всего 10 завершённых тренировок',
+      icon: '⭐',
+    ),
+    Achievement(
+      id: 'workouts_50',
+      title: 'Полтинник',
+      description: '50 тренировок',
+      icon: '🏅',
+    ),
+    Achievement(
+      id: 'level_5',
+      title: 'Уровень 5',
+      description: 'Достигните 5 уровня',
+      icon: '📈',
+    ),
+    Achievement(
+      id: 'early_bird',
+      title: 'Ранняя пташка',
+      description: 'Тренировка до 9:00',
+      icon: '🌅',
+    ),
   ];
 
   /// Опыт за разблокировку достижения
@@ -103,15 +157,21 @@ class ProfileService {
   Future<List<String>> _getUnlockedIds() async {
     final userId = _auth.currentUserId;
     if (userId == null) return [];
-    final v = HiveService.get(box: _userBox, key: _key('achievements'));
-    if (v is List) return v.map((e) => e.toString()).toList();
-    return [];
+    final account = await _accounts.getByUserId(userId);
+    if (account != null) return account.achievements;
+    final legacy = HiveService.get(box: _userBox, key: _key('achievements'));
+    if (legacy is List) return legacy.map((e) => e.toString()).toList();
+    return const [];
   }
 
   Future<void> _unlockAchievement(String id) async {
     final ids = await _getUnlockedIds();
     if (ids.contains(id)) return;
     ids.add(id);
+    final userId = _auth.currentUserId;
+    if (userId != null) {
+      await _accounts.updateAchievements(userId: userId, achievementIds: ids);
+    }
     await HiveService.put(box: _userBox, key: _key('achievements'), value: ids);
     final xp = _achievementXp[id] ?? 15;
     await addExperience(xp);
@@ -128,12 +188,18 @@ class ProfileService {
     final total = stats?.totalWorkouts ?? 0;
 
     // Проверяем и при необходимости разблокируем
-    if (total >= 1 && !unlocked.contains('first_workout')) await _unlockAchievement('first_workout');
-    if (streak >= 3 && !unlocked.contains('streak_3')) await _unlockAchievement('streak_3');
-    if (streak >= 7 && !unlocked.contains('streak_7')) await _unlockAchievement('streak_7');
-    if (total >= 10 && !unlocked.contains('workouts_10')) await _unlockAchievement('workouts_10');
-    if (total >= 50 && !unlocked.contains('workouts_50')) await _unlockAchievement('workouts_50');
-    if (level >= 5 && !unlocked.contains('level_5')) await _unlockAchievement('level_5');
+    if (total >= 1 && !unlocked.contains('first_workout'))
+      await _unlockAchievement('first_workout');
+    if (streak >= 3 && !unlocked.contains('streak_3'))
+      await _unlockAchievement('streak_3');
+    if (streak >= 7 && !unlocked.contains('streak_7'))
+      await _unlockAchievement('streak_7');
+    if (total >= 10 && !unlocked.contains('workouts_10'))
+      await _unlockAchievement('workouts_10');
+    if (total >= 50 && !unlocked.contains('workouts_50'))
+      await _unlockAchievement('workouts_50');
+    if (level >= 5 && !unlocked.contains('level_5'))
+      await _unlockAchievement('level_5');
 
     final unlockedAfter = await _getUnlockedIds();
     final unlockedSet = unlockedAfter.toSet();

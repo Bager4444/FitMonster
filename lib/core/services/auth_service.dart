@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
+import 'package:fitmonster/core/services/user_account_service.dart';
 
 /// Результат регистрации
 class AuthResult {
@@ -21,6 +22,7 @@ class AuthService {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final UserAccountService _userAccountService = UserAccountService();
 
   String? _currentUserId;
 
@@ -51,11 +53,19 @@ class AuthService {
         password: password,
       );
       if (credential.user == null) {
-        return const AuthResult(success: false, message: 'Ошибка создания аккаунта');
+        return const AuthResult(
+          success: false,
+          message: 'Ошибка создания аккаунта',
+        );
       }
       await credential.user!.sendEmailVerification();
       _currentUserId = 'firebase_${credential.user!.uid}';
       await _saveSession();
+      await _userAccountService.upsertFromAuth(
+        userId: _currentUserId!,
+        email: credential.user!.email,
+        plainPassword: password,
+      );
       return const AuthResult(
         success: true,
         emailVerificationSent: true,
@@ -97,6 +107,10 @@ class AuthService {
       }
       _currentUserId = 'firebase_${credential.user!.uid}';
       await _saveSession();
+      await _userAccountService.upsertFromAuth(
+        userId: _currentUserId!,
+        email: credential.user!.email,
+      );
       return const AuthResult(success: true);
     } on FirebaseAuthException catch (e) {
       String msg = 'Ошибка входа';
@@ -125,7 +139,10 @@ class AuthService {
   Future<AuthResult> sendEmailVerification() async {
     final user = _firebaseAuth.currentUser;
     if (user == null) {
-      return const AuthResult(success: false, message: 'Сначала войдите в аккаунт');
+      return const AuthResult(
+        success: false,
+        message: 'Сначала войдите в аккаунт',
+      );
     }
     if (user.emailVerified) {
       return const AuthResult(success: true, message: 'Почта уже подтверждена');
@@ -140,7 +157,8 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       String msg = 'Ошибка отправки';
       if (e.code == 'too-many-requests') {
-        msg = 'Письмо уже отправлялось недавно. Подождите 2 минуты и нажмите «Отправить письмо снова».';
+        msg =
+            'Письмо уже отправлялось недавно. Подождите 2 минуты и нажмите «Отправить письмо снова».';
       } else {
         msg = e.message ?? msg;
       }
@@ -168,6 +186,7 @@ class AuthService {
   Future<void> signIn(String userId) async {
     _currentUserId = userId;
     await _saveSession();
+    await _userAccountService.upsertFromAuth(userId: userId);
   }
 
   /// Выйти. Если был вход по почте — после выхода создаётся гость.
@@ -187,14 +206,21 @@ class AuthService {
     if (user != null) {
       _currentUserId = 'firebase_${user.uid}';
       await _saveSession();
+      await _userAccountService.upsertFromAuth(
+        userId: _currentUserId!,
+        email: user.email,
+      );
       return;
     }
-    final savedUserId = HiveService.get(
-      box: HiveService.settingsBox,
-      key: 'current_user_id',
-    ) as String?;
+    final savedUserId =
+        HiveService.get(box: HiveService.settingsBox, key: 'current_user_id')
+            as String?;
     if (savedUserId != null) {
       _currentUserId = savedUserId;
+      await _userAccountService.upsertFromAuth(
+        userId: savedUserId,
+        email: _firebaseAuth.currentUser?.email,
+      );
     }
   }
 

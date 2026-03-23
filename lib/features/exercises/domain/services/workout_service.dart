@@ -3,11 +3,13 @@ import 'package:fitmonster/features/exercises/domain/models/exercise.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/core/services/stats_service.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
+import 'package:fitmonster/core/services/user_account_service.dart';
 
 /// Сервис для управления тренировками
 class WorkoutService {
   final AuthService _authService = AuthService();
   final StatsService _statsService = StatsService();
+  final UserAccountService _userAccountService = UserAccountService();
 
   /// Создает новую сессию тренировки
   Future<WorkoutSession> startWorkout({
@@ -71,9 +73,7 @@ class WorkoutService {
 
   /// Приостанавливает тренировку
   Future<WorkoutSession> pauseWorkout(WorkoutSession session) async {
-    final updatedSession = session.copyWith(
-      status: WorkoutStatus.paused,
-    );
+    final updatedSession = session.copyWith(status: WorkoutStatus.paused);
 
     await HiveService.put(
       box: HiveService.workoutsBox,
@@ -86,9 +86,7 @@ class WorkoutService {
 
   /// Возобновляет тренировку
   Future<WorkoutSession> resumeWorkout(WorkoutSession session) async {
-    final updatedSession = session.copyWith(
-      status: WorkoutStatus.inProgress,
-    );
+    final updatedSession = session.copyWith(status: WorkoutStatus.inProgress);
 
     await HiveService.put(
       box: HiveService.workoutsBox,
@@ -115,6 +113,12 @@ class WorkoutService {
     // Обновляем статистику
     try {
       await _statsService.updateWorkoutStreak(session.userId);
+      await _userAccountService.updateWorkoutMetrics(
+        userId: session.userId,
+        exerciseCount: updatedSession.totalReps,
+        durationSec: updatedSession.duration.inSeconds,
+        sessionPercent: updatedSession.averageFormScore,
+      );
       print('✅ Workout completed: ${session.exerciseName}');
     } catch (e) {
       print('❌ Error updating stats: $e');
@@ -144,12 +148,11 @@ class WorkoutService {
     try {
       final workoutBox = HiveService.getBox(HiveService.workoutsBox);
       final allWorkouts = workoutBox.values.cast<WorkoutSession>().toList();
-      
+
       // Фильтруем по пользователю и сортируем по дате
-      final userWorkouts = allWorkouts
-          .where((workout) => workout.userId == userId)
-          .toList()
-        ..sort((a, b) => b.startTime.compareTo(a.startTime));
+      final userWorkouts =
+          allWorkouts.where((workout) => workout.userId == userId).toList()
+            ..sort((a, b) => b.startTime.compareTo(a.startTime));
 
       return userWorkouts;
     } catch (e) {
@@ -159,9 +162,14 @@ class WorkoutService {
   }
 
   /// Даты с завершёнными тренировками за последние [days] дней (для стрик-календаря)
-  Future<Set<DateTime>> getWorkoutDatesLastNDays(String userId, int days) async {
+  Future<Set<DateTime>> getWorkoutDatesLastNDays(
+    String userId,
+    int days,
+  ) async {
     final workouts = await getUserWorkouts(userId);
-    final completed = workouts.where((w) => w.status == WorkoutStatus.completed);
+    final completed = workouts.where(
+      (w) => w.status == WorkoutStatus.completed,
+    );
     final now = DateTime.now();
     final from = now.subtract(Duration(days: days));
     final dates = <DateTime>{};
@@ -169,7 +177,9 @@ class WorkoutService {
       if (w.endTime != null && w.endTime!.isAfter(from)) {
         dates.add(DateTime(w.endTime!.year, w.endTime!.month, w.endTime!.day));
       } else if (w.startTime.isAfter(from)) {
-        dates.add(DateTime(w.startTime.year, w.startTime.month, w.startTime.day));
+        dates.add(
+          DateTime(w.startTime.year, w.startTime.month, w.startTime.day),
+        );
       }
     }
     return dates;
@@ -192,12 +202,19 @@ class WorkoutService {
     }
 
     final totalReps = completedWorkouts.fold<int>(
-        0, (sum, workout) => sum + workout.totalReps);
-    final averageFormScore = completedWorkouts.fold<double>(
-        0.0, (sum, workout) => sum + workout.averageFormScore) / 
+      0,
+      (sum, workout) => sum + workout.totalReps,
+    );
+    final averageFormScore =
+        completedWorkouts.fold<double>(
+          0.0,
+          (sum, workout) => sum + workout.averageFormScore,
+        ) /
         completedWorkouts.length;
     final totalDuration = completedWorkouts.fold<Duration>(
-        Duration.zero, (sum, workout) => sum + workout.duration);
+      Duration.zero,
+      (sum, workout) => sum + workout.duration,
+    );
 
     return {
       'totalWorkouts': completedWorkouts.length,
@@ -210,10 +227,7 @@ class WorkoutService {
   /// Удаляет тренировку
   Future<void> deleteWorkout(String workoutId) async {
     try {
-      await HiveService.delete(
-        box: HiveService.workoutsBox,
-        key: workoutId,
-      );
+      await HiveService.delete(box: HiveService.workoutsBox, key: workoutId);
       print('✅ Workout deleted: $workoutId');
     } catch (e) {
       print('❌ Error deleting workout: $e');

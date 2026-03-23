@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:fitmonster/core/models/user_account.dart';
+import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/features/ai/domain/models/ai_message.dart';
+import 'package:fitmonster/core/services/user_account_service.dart';
 import 'package:fitmonster/features/profile/services/profile_service.dart';
 import 'package:fitmonster/features/profile/domain/models/app_profile.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
@@ -8,20 +11,33 @@ import 'package:fitmonster/core/services/hive_service.dart';
 /// AI сервис с интеграцией DeepSeek API
 class DeepSeekAiService {
   static const String _messagesBox = HiveService.userBox;
-  static const String _messagesKey = 'ai_messages';
-  
+  static const String _messagesKeyPrefix = 'ai_messages_';
+
   // DeepSeek API настройки
   static const String _apiUrl = 'https://api.deepseek.com/v1/chat/completions';
-  static const String _apiKey = 'sk-696fc79d42b24a2ea01ccdcda814eca5';
-  static const String _model = 'deepseek-chat';
+  static const String _apiKey = String.fromEnvironment(
+    'DEEPSEEK_API_KEY',
+    defaultValue: '',
+  );
+  static const String _model = String.fromEnvironment(
+    'DEEPSEEK_MODEL',
+    defaultValue: 'deepseek-chat',
+  );
 
   final ProfileService _profileService = ProfileService();
+  final AuthService _authService = AuthService();
+  final UserAccountService _userAccountService = UserAccountService();
+
+  String _messagesKey() {
+    final userId = _authService.currentUserId ?? 'guest';
+    return '$_messagesKeyPrefix$userId';
+  }
 
   /// Получить историю сообщений
   Future<List<AiMessage>> getMessages() async {
-    final data = HiveService.get(box: _messagesBox, key: _messagesKey);
+    final data = HiveService.get(box: _messagesBox, key: _messagesKey());
     if (data == null) return [];
-    
+
     if (data is List) {
       return data
           .map((e) => AiMessage.fromJson(Map<String, dynamic>.from(e)))
@@ -33,13 +49,13 @@ class DeepSeekAiService {
   /// Сохранить сообщения
   Future<void> _saveMessages(List<AiMessage> messages) async {
     final data = messages.map((m) => m.toJson()).toList();
-    await HiveService.put(box: _messagesBox, key: _messagesKey, value: data);
+    await HiveService.put(box: _messagesBox, key: _messagesKey(), value: data);
   }
 
   /// Отправить сообщение пользователя и получить ответ AI
   Future<AiMessage> sendMessage(String userMessage) async {
     final messages = await getMessages();
-    
+
     // Добавляем сообщение пользователя
     final userMsg = AiMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -63,35 +79,44 @@ class DeepSeekAiService {
     List<AiMessage> history,
   ) async {
     try {
+      if (_apiKey.isEmpty) {
+        return _getNoApiKeyResponse();
+      }
       final profile = await _profileService.getAppProfile();
       final xp = await _profileService.getExperience();
       final level = ProfileService.levelFromXp(xp);
+      final userId = _authService.currentUserId;
+      final account = userId == null
+          ? null
+          : await _userAccountService.getByUserId(userId);
 
       // Создаем системный промпт с контекстом пользователя
-      final systemPrompt = _buildSystemPrompt(profile, level);
+      final systemPrompt = _buildSystemPrompt(profile, level, account);
 
       // Формируем историю для API
       final apiMessages = _buildApiMessages(history, systemPrompt);
 
       // Отправляем запрос к DeepSeek API
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
-        },
-        body: jsonEncode({
-          'model': _model,
-          'messages': apiMessages,
-          'temperature': 0.7,
-          'max_tokens': 1000,
-        }),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse(_apiUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $_apiKey',
+            },
+            body: jsonEncode({
+              'model': _model,
+              'messages': apiMessages,
+              'temperature': 0.7,
+              'max_tokens': 1000,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         final aiContent = data['choices'][0]['message']['content'];
-        
+
         return AiMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           content: aiContent,
@@ -109,12 +134,26 @@ class DeepSeekAiService {
     }
   }
 
+  AiMessage _getNoApiKeyResponse() {
+    return AiMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      content:
+          '⚙️ DeepSeek API ключ не настроен.\n\n'
+          'Чтобы включить онлайн-ИИ, запусти приложение с параметром:\n'
+          '--dart-define=DEEPSEEK_API_KEY=your_key\n\n'
+          'Пока отвечаю в офлайн-режиме по встроенной базе знаний 💪',
+      isUser: false,
+      timestamp: DateTime.now(),
+      type: AiMessageType.text,
+    );
+  }
+
   /// Fallback ответ при ошибке API с расширенной базой знаний
   AiMessage _getFallbackResponse(String userMessage) {
     final lower = userMessage.toLowerCase();
     String content;
     AiMessageType type = AiMessageType.text;
-    
+
     // Конкретные группы мышц
     if (lower.contains('бицепс') || lower.contains('руки')) {
       content = _getBicepsWorkout();
@@ -131,7 +170,9 @@ class DeepSeekAiService {
     } else if (lower.contains('грудь') || lower.contains('грудные')) {
       content = _getChestWorkout();
       type = AiMessageType.workout;
-    } else if (lower.contains('ноги') || lower.contains('ног') || lower.contains('бедра')) {
+    } else if (lower.contains('ноги') ||
+        lower.contains('ног') ||
+        lower.contains('бедра')) {
       content = _getLegsWorkout();
       type = AiMessageType.workout;
     } else if (lower.contains('плечи') || lower.contains('дельты')) {
@@ -139,13 +180,17 @@ class DeepSeekAiService {
       type = AiMessageType.workout;
     }
     // Питание
-    else if (lower.contains('после тренировки') || lower.contains('после тренировок')) {
+    else if (lower.contains('после тренировки') ||
+        lower.contains('после тренировок')) {
       content = _getPostWorkoutNutrition();
       type = AiMessageType.nutrition;
-    } else if (lower.contains('до тренировки') || lower.contains('перед тренировкой')) {
+    } else if (lower.contains('до тренировки') ||
+        lower.contains('перед тренировкой')) {
       content = _getPreWorkoutNutrition();
       type = AiMessageType.nutrition;
-    } else if (lower.contains('похудеть') || lower.contains('похудение') || lower.contains('жир')) {
+    } else if (lower.contains('похудеть') ||
+        lower.contains('похудение') ||
+        lower.contains('жир')) {
       content = _getWeightLossNutrition();
       type = AiMessageType.nutrition;
     } else if (lower.contains('набрать') || lower.contains('масс')) {
@@ -154,27 +199,38 @@ class DeepSeekAiService {
     } else if (lower.contains('белок')) {
       content = _getProteinInfo();
       type = AiMessageType.nutrition;
-    } else if (lower.contains('питан') || lower.contains('еда') || lower.contains('есть')) {
+    } else if (lower.contains('питан') ||
+        lower.contains('еда') ||
+        lower.contains('есть')) {
       content = _getGeneralNutrition();
       type = AiMessageType.nutrition;
     }
     // Мотивация
-    else if (lower.contains('мотивац') || lower.contains('устал') || lower.contains('лень') || lower.contains('не хочу')) {
+    else if (lower.contains('мотивац') ||
+        lower.contains('устал') ||
+        lower.contains('лень') ||
+        lower.contains('не хочу')) {
       content = _getMotivation();
       type = AiMessageType.motivation;
     }
     // Общие тренировки
-    else if (lower.contains('трениров') || lower.contains('упражн') || lower.contains('начать')) {
+    else if (lower.contains('трениров') ||
+        lower.contains('упражн') ||
+        lower.contains('начать')) {
       content = _getGeneralWorkout();
       type = AiMessageType.workout;
     }
     // Восстановление
-    else if (lower.contains('восстановление') || lower.contains('отдых') || lower.contains('болят')) {
+    else if (lower.contains('восстановление') ||
+        lower.contains('отдых') ||
+        lower.contains('болят')) {
       content = _getRecoveryInfo();
       type = AiMessageType.text;
     }
     // Приветствие
-    else if (lower.contains('привет') || lower.contains('здравствуй') || lower.contains('hello')) {
+    else if (lower.contains('привет') ||
+        lower.contains('здравствуй') ||
+        lower.contains('hello')) {
       content = _getGreeting();
       type = AiMessageType.text;
     }
@@ -183,7 +239,7 @@ class DeepSeekAiService {
       content = _getDefaultResponse();
       type = AiMessageType.text;
     }
-    
+
     return AiMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content,
@@ -461,29 +517,29 @@ class DeepSeekAiService {
           '• Трудно = растешь\n'
           '• Легко = стоишь на месте\n\n'
           'Не сдавайся, результаты уже близко! 🔥',
-      
+
       '🌟 Чемпионы не рождаются, они создаются!\n\n'
           'Твой путь:\n'
           '• Сегодня лучше, чем вчера\n'
           '• Завтра лучше, чем сегодня\n\n'
           'Продолжай тренироваться! ⚡',
-      
+
       '🚀 Ты уже на правильном пути!\n\n'
           'Каждое повторение приближает к цели.\n'
           'Каждая тренировка - это победа.\n\n'
           'Не останавливайся! 💪',
-      
+
       '🏆 Успех = постоянство + время\n\n'
           'Не важно, как медленно ты идешь,\n'
           'главное - не останавливаться!\n\n'
           'Ты молодец! Продолжай! 🔥',
-      
+
       '⚡ Боль временна, гордость вечна!\n\n'
           'Через месяц ты не узнаешь себя.\n'
           'Через год ты будешь другим человеком.\n\n'
           'Вперед к цели! 💪',
     ];
-    
+
     return motivations[DateTime.now().second % motivations.length];
   }
 
@@ -538,13 +594,21 @@ class DeepSeekAiService {
   }
 
   /// Создаем системный промпт с контекстом пользователя
-  String _buildSystemPrompt(AppProfile profile, int level) {
+  String _buildSystemPrompt(
+    AppProfile profile,
+    int level,
+    UserAccount? account,
+  ) {
     final contraindications = profile.contraindications.isNotEmpty
         ? profile.contraindications.join(', ')
         : 'нет';
     final allergies = profile.allergies.isNotEmpty
         ? profile.allergies.join(', ')
         : 'нет';
+    final worldRank = account?.worldRank ?? 0;
+    final regionRank = account?.regionRank ?? 0;
+    final avgScore = (account?.averageScorePercent ?? 0).toStringAsFixed(1);
+    final subscription = account?.subscriptionStatus.name ?? 'free';
 
     return '''Ты - персональный фитнес-ассистент в приложении FitMonster. 
 Твоя задача - помогать пользователям с тренировками, питанием и мотивацией.
@@ -552,6 +616,9 @@ class DeepSeekAiService {
 ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ:
 - Имя: ${profile.displayName}
 - Уровень: $level
+- Подписка: $subscription
+- Рейтинг (мир/регион): $worldRank / $regionRank
+- Средний процент техники: $avgScore%
 - Противопоказания: $contraindications
 - Аллергии: $allergies
 
@@ -635,12 +702,9 @@ class DeepSeekAiService {
     String systemPrompt,
   ) {
     final messages = <Map<String, String>>[];
-    
+
     // Добавляем системный промпт
-    messages.add({
-      'role': 'system',
-      'content': systemPrompt,
-    });
+    messages.add({'role': 'system', 'content': systemPrompt});
 
     // Добавляем последние 10 сообщений из истории для контекста
     final recentHistory = history.length > 10
@@ -660,27 +724,32 @@ class DeepSeekAiService {
   /// Определяем тип сообщения по содержимому
   AiMessageType _detectMessageType(String content) {
     final lower = content.toLowerCase();
-    
-    if (lower.contains('тренир') || lower.contains('упражн') || 
-        lower.contains('подход') || lower.contains('повторен')) {
+
+    if (lower.contains('тренир') ||
+        lower.contains('упражн') ||
+        lower.contains('подход') ||
+        lower.contains('повторен')) {
       return AiMessageType.workout;
     }
-    
-    if (lower.contains('питан') || lower.contains('еда') || 
-        lower.contains('белок') || lower.contains('калори')) {
+
+    if (lower.contains('питан') ||
+        lower.contains('еда') ||
+        lower.contains('белок') ||
+        lower.contains('калори')) {
       return AiMessageType.nutrition;
     }
-    
-    if (lower.contains('мотивац') || lower.contains('молодец') || 
+
+    if (lower.contains('мотивац') ||
+        lower.contains('молодец') ||
         lower.contains('продолжа')) {
       return AiMessageType.motivation;
     }
-    
+
     return AiMessageType.text;
   }
 
   /// Очистить историю
   Future<void> clearHistory() async {
-    await HiveService.delete(box: _messagesBox, key: _messagesKey);
+    await HiveService.delete(box: _messagesBox, key: _messagesKey());
   }
 }

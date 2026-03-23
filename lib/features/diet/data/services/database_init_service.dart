@@ -11,6 +11,7 @@ class DatabaseInitService {
   DatabaseInitService._internal();
 
   static const String _initKey = 'database_initialized';
+
   /// Версия источника продуктов: 1 = старая (USDA/API), 2 = локальный JSON
   static const String _foodsVersionKey = 'foods_data_version';
   static const int _localJsonVersion = 2;
@@ -25,7 +26,9 @@ class DatabaseInitService {
     await barcodesBox.clear();
     await settingsBox.put(_initKey, false);
     await settingsBox.put(_foodsVersionKey, _localJsonVersion);
-    print('🗑️ База продуктов очищена, инициализация сброшена для загрузки из JSON');
+    print(
+      '🗑️ База продуктов очищена, инициализация сброшена для загрузки из JSON',
+    );
   }
 
   /// Миграция: если база была инициализирована по старой схеме — очистить продукты и сбросить init.
@@ -33,7 +36,7 @@ class DatabaseInitService {
   Future<void> migrateToLocalFoodsIfNeeded() async {
     final settingsBox = Hive.box(HiveService.settingsBox);
     final version = settingsBox.get(_foodsVersionKey, defaultValue: 0) as int;
-    //if (version >= _localJsonVersion) return;
+    if (version >= _localJsonVersion) return;
 
     print('🔄 Миграция на локальный JSON: очистка старых продуктов...');
     await clearFoodsAndResetForJson();
@@ -46,7 +49,7 @@ class DatabaseInitService {
   }
 
   /// Инициализировать базу данных (импорт базовых данных)
-  /// 
+  ///
   /// Вызывается один раз при первом запуске приложения
   Future<void> initializeDatabase({
     Function(String message)? onProgress,
@@ -75,7 +78,9 @@ class DatabaseInitService {
         );
         onProgress?.call('✅ Продукты импортированы');
       } catch (e) {
-        onError?.call('Не удалось загрузить продукты из assets/data/foods.json: $e');
+        onError?.call(
+          'Не удалось загрузить продукты из assets/data/foods.json: $e',
+        );
       }
 
       // Пометить как инициализированную и версию источника продуктов
