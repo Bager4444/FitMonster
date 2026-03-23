@@ -14,7 +14,7 @@ class ImprovedRepCounter {
   bool _isInCorrectStaticPosition = false;
   
   // Оптимизированные настройки для FPS
-  static const int _minTimeBetweenReps = 600;
+  static const int _minTimeBetweenReps = 400;
   static const double _minConfidence = 0.35;
   static const int _skipFrames = 1; // Анализируем каждый кадр для быстрой реакции
   

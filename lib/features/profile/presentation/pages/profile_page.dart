@@ -9,6 +9,8 @@ import 'package:fitmonster/core/models/user_stats.dart';
 import 'package:fitmonster/core/models/user_account.dart';
 import 'package:fitmonster/features/auth/presentation/pages/auth_page.dart';
 import 'package:fitmonster/features/diet/presentation/pages/profile_setup_page.dart';
+import 'package:fitmonster/features/profile/domain/models/achievement.dart';
+import 'package:fitmonster/features/profile/services/profile_service.dart';
 
 /// Экран профиля: streak за неделю (Пн–Вс) и сетка статистики (привязаны к аккаунту).
 class ProfilePage extends StatefulWidget {
@@ -26,11 +28,31 @@ class _ProfilePageState extends State<ProfilePage> {
   UserAccount? _userAccount;
   String? _nickname;
   List<int> _weekActiveDays = [];
+  List<Achievement> _previewAchievements = [];
+  final TextEditingController _promoController = TextEditingController();
+  bool _promoLoading = false;
+  List<UserAccount> _leaderboardTop = [];
+  int? _myRank;
+  int _leaderboardTotal = 0;
+  int _myRatingScore = 0;
+  bool _rankRefreshing = false;
+
+  /// Промокод → бонусный XP (один раз на пользователя).
+  static const Map<String, int> _promoXpBonus = {
+    'FITMONSTER': 100,
+    'START2025': 50,
+  };
 
   @override
   void initState() {
     super.initState();
     _loadDataForCurrentUser();
+  }
+
+  @override
+  void dispose() {
+    _promoController.dispose();
+    super.dispose();
   }
 
   @override
@@ -50,6 +72,17 @@ class _ProfilePageState extends State<ProfilePage> {
     final nickname =
         HiveService.get(box: HiveService.settingsBox, key: 'nickname_$userId')
             as String?;
+    final achievements = await ProfileService().getAchievements();
+    final accountsSvc = UserAccountService();
+    final sorted = accountsSvc.sortedAccountsByRating();
+    final top = sorted.take(12).toList();
+    int? myRank;
+    if (userId.isNotEmpty) {
+      final i = sorted.indexWhere((u) => u.id == userId);
+      myRank = i >= 0 ? i + 1 : null;
+    }
+    final myScore =
+        account != null ? UserAccountService.ratingScore(account) : 0;
     if (mounted) {
       final weekActive = StatsService.getWeekActiveDays(userId);
       setState(() {
@@ -57,7 +90,104 @@ class _ProfilePageState extends State<ProfilePage> {
         _userAccount = account;
         _nickname = nickname != null && nickname.isNotEmpty ? nickname : null;
         _weekActiveDays = weekActive;
+        _previewAchievements = achievements.take(8).toList();
+        _leaderboardTop = top;
+        _myRank = myRank;
+        _leaderboardTotal = sorted.length;
+        _myRatingScore = myScore;
       });
+    }
+  }
+
+  Future<void> _refreshLeaderboardRanks() async {
+    setState(() => _rankRefreshing = true);
+    try {
+      await UserAccountService().refreshRanks();
+      if (mounted) {
+        await _loadDataForCurrentUser(force: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _rankRefreshing = false);
+      }
+    }
+  }
+
+  String _leaderboardDisplayName(UserAccount u) {
+    final n = u.name.trim();
+    if (n.isNotEmpty) {
+      return n;
+    }
+    final em = u.email;
+    if (em != null && em.contains('@')) {
+      return em.split('@').first;
+    }
+    return 'Игрок';
+  }
+
+  String _medalForRank(int rank) {
+    return switch (rank) {
+      1 => '🥇',
+      2 => '🥈',
+      3 => '🥉',
+      _ => '#$rank',
+    };
+  }
+
+  Future<void> _applyPromoCode() async {
+    final raw = _promoController.text.trim();
+    if (raw.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Введите промокод'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    final code = raw.toUpperCase();
+    final bonus = _promoXpBonus[code];
+    if (bonus == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Промокод не найден'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return;
+    }
+    final userId = AuthService().currentUserId ?? '';
+    final key = 'promos_redeemed_$userId';
+    final rawList =
+        HiveService.get(box: HiveService.settingsBox, key: key) as List?;
+    final used = rawList?.map((e) => e.toString()).toList() ?? <String>[];
+    if (used.contains(code)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Этот промокод уже использован'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+    setState(() => _promoLoading = true);
+    used.add(code);
+    await HiveService.put(box: HiveService.settingsBox, key: key, value: used);
+    await ProfileService().addExperience(bonus);
+    if (mounted) {
+      setState(() => _promoLoading = false);
+      _promoController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Промокод принят! +$bonus XP'),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
+      await _loadDataForCurrentUser(force: true);
     }
   }
 
@@ -75,8 +205,9 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_userAccount != null && _userAccount!.name.trim().isNotEmpty) {
       return _userAccount!.name.trim();
     }
-    if (_nickname != null && _nickname!.trim().isNotEmpty)
+    if (_nickname != null && _nickname!.trim().isNotEmpty) {
       return _nickname!.trim();
+    }
     return auth.currentUserEmail?.split('@').first ?? 'Гость';
   }
 
@@ -85,10 +216,11 @@ class _ProfilePageState extends State<ProfilePage> {
     final auth = AuthService();
     final isLoggedIn = auth.isEmailUser;
     final userId = auth.currentUserId ?? '';
-    if (userId != _loadedUserId)
+    if (userId != _loadedUserId) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _loadDataForCurrentUser(),
       );
+    }
     final displayName = _getDisplayName(auth);
     return SingleChildScrollView(
       padding: EdgeInsets.only(
@@ -112,6 +244,12 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildStreakCard(),
           const SizedBox(height: 24),
           _buildStatsGrid(),
+          const SizedBox(height: 24),
+          _buildRatingSection(userId),
+          const SizedBox(height: 24),
+          _buildPromoSection(),
+          const SizedBox(height: 24),
+          _buildAchievementsPreview(),
           const SizedBox(height: 24),
           _buildActions(context),
         ],
@@ -341,6 +479,291 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 4),
           Text(item.value, style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingSection(String currentUserId) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.leaderboard, color: GlassTheme.glowCyan, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Рейтинг',
+                  style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                ),
+              ),
+              IconButton(
+                onPressed: _rankRefreshing ? null : _refreshLeaderboardRanks,
+                icon: _rankRefreshing
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(Icons.refresh, color: GlassTheme.textSecondary),
+                tooltip: 'Обновить позиции',
+              ),
+            ],
+          ),
+          Text(
+            'Локально: все аккаунты на этом устройстве. Балл = упражнения, время, техника, ачивки.',
+            style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
+          ),
+          if (_myRank != null || _leaderboardTotal > 0) ...[
+            const SizedBox(height: 10),
+            Text(
+              _myRank != null
+                  ? 'Ваше место: $_myRank из $_leaderboardTotal · балл $_myRatingScore'
+                  : 'Игроков в таблице: $_leaderboardTotal',
+              style: TextStyle(
+                color: GlassTheme.glowCyan,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          if (_leaderboardTop.isEmpty)
+            Text(
+              'Пока нет данных для рейтинга',
+              style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
+            )
+          else
+            ...List.generate(_leaderboardTop.length, (index) {
+              final rank = index + 1;
+              final u = _leaderboardTop[index];
+              final isMe = u.id == currentUserId;
+              final score = UserAccountService.ratingScore(u);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isMe
+                        ? GlassTheme.glowCyan.withOpacity(0.12)
+                        : Colors.white.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isMe
+                          ? GlassTheme.glowCyan.withOpacity(0.5)
+                          : Colors.white.withOpacity(0.15),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 40,
+                        child: Text(
+                          _medalForRank(rank),
+                          style: const TextStyle(fontSize: 18),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _leaderboardDisplayName(u),
+                              style: GlassTheme.titleStyle.copyWith(fontSize: 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (isMe)
+                              Text(
+                                'Вы',
+                                style: TextStyle(
+                                  color: GlassTheme.glowCyan,
+                                  fontSize: 11,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '$score',
+                        style: GlassTheme.titleStyle.copyWith(fontSize: 15),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoSection() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_offer, color: GlassTheme.glowCyan, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'Промокод',
+                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _promoController,
+                  style: const TextStyle(color: GlassTheme.textPrimary),
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    hintText: 'Введите код',
+                    hintStyle: TextStyle(
+                      color: GlassTheme.textSecondary.withOpacity(0.8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.08),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(0.25),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(0.25),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: GlassTheme.glowCyan),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                  ),
+                  onSubmitted: (_) {
+                    if (!_promoLoading) _applyPromoCode();
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              FilledButton(
+                onPressed: _promoLoading ? null : _applyPromoCode,
+                style: FilledButton.styleFrom(
+                  backgroundColor: GlassTheme.gradientTop,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: _promoLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('OK'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementsPreview() {
+    if (_previewAchievements.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.emoji_events, color: GlassTheme.glowCyan, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'Достижения',
+                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._previewAchievements.map(_buildAchievementTile),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementTile(Achievement a) {
+    final unlocked = a.isUnlocked;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(a.icon, style: const TextStyle(fontSize: 28)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  a.title,
+                  style: GlassTheme.titleStyle.copyWith(
+                    fontSize: 15,
+                    color: unlocked
+                        ? GlassTheme.textPrimary
+                        : GlassTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  a.description,
+                  style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                ),
+                if (unlocked)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Получено',
+                      style: TextStyle(
+                        color: GlassTheme.glowCyan,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Icon(
+            unlocked ? Icons.check_circle : Icons.lock_outline,
+            color: unlocked ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+            size: 22,
+          ),
         ],
       ),
     );

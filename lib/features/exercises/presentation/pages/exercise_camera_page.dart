@@ -74,14 +74,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   
   // Throttle setState для UI (не на каждый кадр)
   DateTime _lastUiUpdate = DateTime.now();
-  static const int _uiUpdateIntervalMs = 280;
+  static const int _uiUpdateIntervalMs = 200;
   
   // Флаг обработки кадра
   bool _isProcessingFrame = false;
   DateTime _lastFrameTime = DateTime.now();
-  static const int _targetFps = 10; // Баланс: отзывчивость + умеренная нагрузка на CPU
+  static const int _targetFps = 12; // Чуть выше частота анализа позы для быстрее засчёта
   int _frameSkipCounter = 0;
-  static const int _frameSkipRate = 2; // Обрабатываем каждый 2-й кадр
+  static const int _frameSkipRate = 1; // Каждый кадр, прошедший FPS-ограничение
   
   // Система опыта
   int _lastRepCountForExp = 0; // Последний подсчитанный репкаунт для опыта

@@ -28,6 +28,14 @@
 
 ## Changelog
 
+### 2026-03-21 — Документация сборки IPA (iOS)
+- `docs/build_ios_ipa.md`: аналог release APK для iPhone; ограничение Windows / отсутствие `flutter build ipa` в Windows-SDK
+- `scripts/build_ipa_macos.sh`: `pod install` + `flutter build ipa --release` на macOS
+
+### 2026-03-21 — Рейтинг на экране «Профиль»
+- Таблица топ-12 по `UserAccountService.sortedAccountsByRating()` / `ratingScore`, подсветка текущего пользователя, строка «Ваше место … из … · балл …», пояснение что рейтинг локальный (Hive на устройстве)
+- Кнопка обновления вызывает `refreshRanks()` и перезагрузку данных
+
 ### 2026-03-23 — Firestore: синк UserAccount
 - Зависимость `cloud_firestore`; сервис `lib/core/services/user_account_firestore_sync.dart` (push/pull, сравнение `updatedAt`)
 - Колбэк `UserAccountService.attachFirestorePush` регистрируется в `main.dart` после успешного `Firebase.initializeApp`

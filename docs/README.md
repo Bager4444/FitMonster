@@ -10,6 +10,7 @@
 | [STATUS.md](STATUS.md) | Текущий статус и прогресс разработки |
 | [BACKLOG.md](BACKLOG.md) | Backlog и задачи по спринтам |
 | [specs/firestore_sync_plan.md](specs/firestore_sync_plan.md) | План синхронизации данных через Firebase Firestore |
+| [build_ios_ipa.md](build_ios_ipa.md) | Сборка **IPA** для iPhone (только на macOS + Xcode) |
 
 ## Запуск
 

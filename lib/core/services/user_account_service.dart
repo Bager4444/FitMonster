@@ -217,7 +217,17 @@ class UserAccountService {
     await refreshRanks();
   }
 
-  Future<void> refreshRanks() async {
+  /// Балл для таблицы лидеров (тот же, что внутри [refreshRanks]).
+  static int ratingScore(UserAccount account) {
+    final base = account.totalExercises * 10;
+    final duration = account.totalTrainingTimeSec ~/ 60;
+    final quality = account.averageScorePercent.round() * 50;
+    final achievements = account.achievements.length * 100;
+    return base + duration + quality + achievements;
+  }
+
+  /// Все аккаунты из Hive по убыванию рейтинга (без записи в облако).
+  List<UserAccount> sortedAccountsByRating() {
     final box = HiveService.getBox(HiveService.usersBox);
     final users = box.values
         .whereType<Map>()
@@ -226,26 +236,27 @@ class UserAccountService {
               UserAccount.fromMap(raw.map((k, v) => MapEntry(k.toString(), v))),
         )
         .toList();
+    users.sort((a, b) => ratingScore(b).compareTo(ratingScore(a)));
+    return users;
+  }
+
+  Future<void> refreshRanks() async {
+    final users = sortedAccountsByRating();
     if (users.isEmpty) return;
 
-    users.sort((a, b) => _score(b).compareTo(_score(a)));
     for (var i = 0; i < users.length; i++) {
       final user = users[i];
       final sameRegion =
           users.where((u) => u.regionCode == user.regionCode).toList()
-            ..sort((a, b) => _score(b).compareTo(_score(a)));
+            ..sort(
+              (a, b) => ratingScore(b).compareTo(ratingScore(a)),
+            );
       final regionRank = sameRegion.indexWhere((u) => u.id == user.id) + 1;
       await _save(user.copyWith(worldRank: i + 1, regionRank: regionRank));
     }
   }
 
-  int _score(UserAccount account) {
-    final base = account.totalExercises * 10;
-    final duration = account.totalTrainingTimeSec ~/ 60;
-    final quality = account.averageScorePercent.round() * 50;
-    final achievements = account.achievements.length * 100;
-    return base + duration + quality + achievements;
-  }
+  int _score(UserAccount account) => ratingScore(account);
 
   String _defaultDeviceLabel() {
     if (kIsWeb) return 'web';

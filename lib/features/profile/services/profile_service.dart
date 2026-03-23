@@ -2,6 +2,7 @@ import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
 import 'package:fitmonster/core/services/stats_service.dart';
 import 'package:fitmonster/core/services/user_account_service.dart';
+import 'package:fitmonster/features/diet/domain/services/diet_service.dart';
 import 'package:fitmonster/features/profile/domain/models/app_profile.dart';
 import 'package:fitmonster/features/profile/domain/models/achievement.dart';
 
@@ -141,6 +142,66 @@ class ProfileService {
       description: 'Тренировка до 9:00',
       icon: '🌅',
     ),
+    Achievement(
+      id: 'workouts_100',
+      title: 'Сотня',
+      description: '100 завершённых тренировок',
+      icon: '💯',
+    ),
+    Achievement(
+      id: 'streak_14',
+      title: 'Две недели огня',
+      description: '14 дней активности подряд',
+      icon: '🔥',
+    ),
+    Achievement(
+      id: 'streak_30',
+      title: 'Месяц дисциплины',
+      description: '30 дней подряд',
+      icon: '📅',
+    ),
+    Achievement(
+      id: 'level_10',
+      title: 'Ветеран зала',
+      description: 'Достигните 10 уровня',
+      icon: '🌟',
+    ),
+    Achievement(
+      id: 'exercises_500',
+      title: 'Железная выдержка',
+      description: '500 зачтённых упражнений в тренировках',
+      icon: '🏋️',
+    ),
+    Achievement(
+      id: 'technician_80',
+      title: 'Техника на уровне',
+      description: 'Средний балл ≥80% (от 5 оценённых сессий)',
+      icon: '🎓',
+    ),
+    Achievement(
+      id: 'time_3h',
+      title: 'Три часа в движении',
+      description: 'Суммарно ≥3 ч активных тренировок',
+      icon: '⏱️',
+    ),
+    Achievement(
+      id: 'diet_profile_set',
+      title: 'Питание под контролем',
+      description: 'Заполнен профиль питания',
+      icon: '🥗',
+    ),
+    Achievement(
+      id: 'level_15',
+      title: 'Легенда FitMonster',
+      description: 'Достигните 15 уровня',
+      icon: '👑',
+    ),
+    Achievement(
+      id: 'workouts_200',
+      title: 'Двухсотка',
+      description: '200 завершённых тренировок',
+      icon: '🚀',
+    ),
   ];
 
   /// Опыт за разблокировку достижения
@@ -152,6 +213,16 @@ class ProfileService {
     'workouts_50': 100,
     'level_5': 75,
     'early_bird': 20,
+    'workouts_100': 120,
+    'streak_14': 60,
+    'streak_30': 150,
+    'level_10': 100,
+    'exercises_500': 80,
+    'technician_80': 90,
+    'time_3h': 55,
+    'diet_profile_set': 40,
+    'level_15': 200,
+    'workouts_200': 160,
   };
 
   Future<List<String>> _getUnlockedIds() async {
@@ -178,28 +249,50 @@ class ProfileService {
   }
 
   Future<List<Achievement>> getAchievements() async {
-    final unlocked = await _getUnlockedIds();
-    final stats = _auth.currentUserId != null
-        ? await _stats.getUserStats(_auth.currentUserId!)
-        : null;
+    var unlocked = await _getUnlockedIds();
+    final userId = _auth.currentUserId;
+    final stats = userId != null ? await _stats.getUserStats(userId) : null;
     final xp = await getExperience();
     final level = levelFromXp(xp);
     final streak = stats?.workoutStreak ?? 0;
     final total = stats?.totalWorkouts ?? 0;
+    final account =
+        userId != null ? await _accounts.getByUserId(userId) : null;
+    final exercises = account?.totalExercises ?? 0;
+    final avgScore = account?.averageScorePercent ?? 0;
+    final scoredSessions = account?.scoredSessionsCount ?? 0;
+    final timeSec = account?.totalTrainingTimeSec ?? 0;
+    final dietProfile =
+        userId != null ? await DietService.getUserProfile() : null;
+    final dietOk =
+        dietProfile != null && dietProfile.userId == userId && dietProfile.userId.isNotEmpty;
 
-    // Проверяем и при необходимости разблокируем
-    if (total >= 1 && !unlocked.contains('first_workout'))
-      await _unlockAchievement('first_workout');
-    if (streak >= 3 && !unlocked.contains('streak_3'))
-      await _unlockAchievement('streak_3');
-    if (streak >= 7 && !unlocked.contains('streak_7'))
-      await _unlockAchievement('streak_7');
-    if (total >= 10 && !unlocked.contains('workouts_10'))
-      await _unlockAchievement('workouts_10');
-    if (total >= 50 && !unlocked.contains('workouts_50'))
-      await _unlockAchievement('workouts_50');
-    if (level >= 5 && !unlocked.contains('level_5'))
-      await _unlockAchievement('level_5');
+    Future<void> tryUnlock(String id, bool condition) async {
+      if (condition && !unlocked.contains(id)) {
+        await _unlockAchievement(id);
+        unlocked = await _getUnlockedIds();
+      }
+    }
+
+    await tryUnlock('first_workout', total >= 1);
+    await tryUnlock('streak_3', streak >= 3);
+    await tryUnlock('streak_7', streak >= 7);
+    await tryUnlock('streak_14', streak >= 14);
+    await tryUnlock('streak_30', streak >= 30);
+    await tryUnlock('workouts_10', total >= 10);
+    await tryUnlock('workouts_50', total >= 50);
+    await tryUnlock('workouts_100', total >= 100);
+    await tryUnlock('workouts_200', total >= 200);
+    await tryUnlock('level_5', level >= 5);
+    await tryUnlock('level_10', level >= 10);
+    await tryUnlock('level_15', level >= 15);
+    await tryUnlock('exercises_500', exercises >= 500);
+    await tryUnlock('technician_80', avgScore >= 80 && scoredSessions >= 5);
+    await tryUnlock('time_3h', timeSec >= 10800);
+    await tryUnlock('diet_profile_set', dietOk);
+    if (stats != null) {
+      await tryUnlock('early_bird', stats.lastWorkoutDate.hour < 9);
+    }
 
     final unlockedAfter = await _getUnlockedIds();
     final unlockedSet = unlockedAfter.toSet();
