@@ -9,6 +9,7 @@
 | [ТЗ.md](ТЗ.md) | Техническое задание, функциональные требования |
 | [STATUS.md](STATUS.md) | Текущий статус и прогресс разработки |
 | [BACKLOG.md](BACKLOG.md) | Backlog и задачи по спринтам |
+| [specs/firestore_sync_plan.md](specs/firestore_sync_plan.md) | План синхронизации данных через Firebase Firestore |
 
 ## Запуск
 

@@ -28,6 +28,16 @@
 
 ## Changelog
 
+### 2026-03-23 — Firestore: синк UserAccount
+- Зависимость `cloud_firestore`; сервис `lib/core/services/user_account_firestore_sync.dart` (push/pull, сравнение `updatedAt`)
+- Колбэк `UserAccountService.attachFirestorePush` регистрируется в `main.dart` после успешного `Firebase.initializeApp`
+- `UserAccount.copyWith` дополнен параметром `id` для слияния с облаком
+- Гости `user_*` в Firestore не пишутся; только `firebase_<uid>`
+
+### 2026-03-21 — План синхронизации Firestore
+- Добавлен `docs/specs/firestore_sync_plan.md`: модель коллекций, Security Rules, фазы внедрения, список действий в Firebase Console
+- В `docs/README.md` — ссылка на спецификацию; в `activeContext` зафиксирован режим «план утверждается, код после ОК»
+
 ### 2026-03-20 — Единая БД пользователей
 - Добавлена модель `UserAccount` и сервис `UserAccountService` для хранения данных пользователя в `Hive.users`
 - Реализованы поля: имя, email, hash пароля, ударный режим, суммарные упражнения, время выполнения, средний процент, ачивки, 3 последних устройства, аллергии, противопоказания, подписка, мировой и региональный рейтинг

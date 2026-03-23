@@ -14,7 +14,17 @@ class UserAccountService {
 
   static const String _migratedPrefix = 'user_account_migrated_';
 
-  String _key(String userId) => 'user_account_$userId';
+  /// Ключ записи в [HiveService.usersBox] (используется и Firestore-синком).
+  static String storageKeyFor(String userId) => 'user_account_$userId';
+
+  String _key(String userId) => storageKeyFor(userId);
+
+  /// Push в Firestore после сохранения в Hive (регистрируется в [main]).
+  Future<void> Function(UserAccount account)? _firestorePush;
+
+  void attachFirestorePush(Future<void> Function(UserAccount account) fn) {
+    _firestorePush = fn;
+  }
 
   String hashPassword(String rawPassword) {
     return sha256.convert(utf8.encode(rawPassword)).toString();
@@ -248,6 +258,25 @@ class UserAccountService {
       key: _key(account.id),
       value: account.toMap(),
     );
+    final push = _firestorePush;
+    if (account.id.startsWith('firebase_')) {
+      if (push == null) {
+        if (kDebugMode) {
+          debugPrint(
+            'UserAccountService: пропуск Firestore — не вызван attachFirestorePush '
+            '(часто Firebase.initializeApp не выполнился).',
+          );
+        }
+      } else {
+        try {
+          await push(account);
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('UserAccountService Firestore push: $e\n$st');
+          }
+        }
+      }
+    }
   }
 
   Future<void> syncFromDietProfile(UserProfile profile) async {

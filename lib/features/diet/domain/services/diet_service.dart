@@ -6,6 +6,9 @@ import 'package:fitmonster/features/diet/domain/models/food_log.dart';
 
 /// Сервис для работы с диетой и питанием
 class DietService {
+  /// После сохранения профиля питания — синк Firestore (регистрируется в [main]).
+  static Future<void> Function(String userId)? onAfterProfileSaved;
+
   static const String _profileBoxName = 'user_profile';
   static const String _foodLogsBoxName = 'food_logs';
   static const String _keyFoodLogsClearedOnce = 'diet_food_logs_cleared_once_v1';
@@ -30,6 +33,9 @@ class DietService {
     final box = await Hive.openBox<UserProfile>(_profileBoxName);
     await box.put(profile.userId, profile);
     print('Profile saved with userId: ${profile.userId}');
+    try {
+      await onAfterProfileSaved?.call(profile.userId);
+    } catch (_) {}
   }
 
   /// Получить профиль текущего пользователя

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "237979256616",
-    "project_id": "fitmonster-17e46",
-    "storage_bucket": "fitmonster-17e46.firebasestorage.app"
+    "project_number": "1005915191100",
+    "project_id": "fitmonster-ede5c",
+    "storage_bucket": "fitmonster-ede5c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:237979256616:android:0b0eea06efda696ffef21d",
+        "mobilesdk_app_id": "1:1005915191100:android:ce6cdd7380739af79bd039",
         "android_client_info": {
           "package_name": "com.fitmonster.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDq-sgYjKTrP7vI-5FIwW5xyj39X8XSzsY"
+          "current_key": "AIzaSyAtlYbERbuNglMDxtc16MvgqYsTroavD-Q"
         }
       ],
       "services": {

@@ -69,6 +69,7 @@ class UserAccount {
   }
 
   UserAccount copyWith({
+    String? id,
     String? name,
     String? email,
     String? passwordHash,
@@ -88,7 +89,7 @@ class UserAccount {
     DateTime? updatedAt,
   }) {
     return UserAccount(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       email: email ?? this.email,
       passwordHash: passwordHash ?? this.passwordHash,

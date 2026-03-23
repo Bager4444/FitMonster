@@ -3,6 +3,9 @@ import 'package:fitmonster/core/services/hive_service.dart';
 
 /// Сервис для работы со статистикой
 class StatsService {
+  /// После сохранения стриков/тренировок — обновить метрики в Firestore (регистрируется в [main]).
+  static Future<void> Function(String userId)? onAfterStatsPersist;
+
   /// Получить статистику пользователя
   Future<UserStats> getUserStats(String userId) async {
     try {
@@ -37,6 +40,9 @@ class StatsService {
       );
 
       print('✅ User stats saved');
+      try {
+        await onAfterStatsPersist?.call(userId);
+      } catch (_) {}
     } catch (e) {
       print('❌ Error saving user stats: $e');
       rethrow;

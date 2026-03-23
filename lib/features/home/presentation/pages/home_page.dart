@@ -7,6 +7,7 @@ import 'package:fitmonster/features/exercises/presentation/pages/exercises_page.
 import 'package:fitmonster/features/diet/presentation/pages/diet_page.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/workout_complexes_page.dart';
 import 'package:fitmonster/features/profile/presentation/pages/profile_page.dart';
+import 'package:fitmonster/features/ai/presentation/pages/ai_chat_page.dart';
 
 /// Главная страница: Deep Blue градиент, плавающая стеклянная навигация.
 /// Вкладки создаются лениво — только при первом открытии, чтобы не строить все экраны при старте.
@@ -20,6 +21,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   static const double _navBottomMargin = 20;
   static const double _navHorizontalMargin = 8;
+  /// Высота капсулы навигации + зазор до FAB (чат не перекрывает табы).
+  static const double _aiFabClearanceAboveNav = 88;
 
   final List<Widget?> _cachedTabs = [null, null]; // только Упражнения и Комплексы кэшируем
 
@@ -59,6 +62,32 @@ class _HomePageState extends State<HomePage> {
               right: _navHorizontalMargin,
               bottom: _navBottomMargin + MediaQuery.of(context).padding.bottom,
               child: _FloatingNavCapsule(),
+            ),
+            Positioned(
+              right: 20,
+              bottom: _navBottomMargin +
+                  MediaQuery.of(context).padding.bottom +
+                  _aiFabClearanceAboveNav,
+              child: Tooltip(
+                message: 'AI ассистент',
+                child: GlassContainer(
+                  onTap: () {
+                    Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const AiChatPage(),
+                      ),
+                    );
+                  },
+                  padding: const EdgeInsets.all(14),
+                  borderRadius: 28,
+                  blurSigma: 16,
+                  child: const Icon(
+                    Icons.smart_toy,
+                    color: GlassTheme.glowCyan,
+                    size: 28,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
+import 'package:fitmonster/core/services/user_account_firestore_sync.dart';
 import 'package:fitmonster/core/services/user_account_service.dart';
 
 /// Результат регистрации
@@ -25,6 +26,15 @@ class AuthService {
   final UserAccountService _userAccountService = UserAccountService();
 
   String? _currentUserId;
+
+  /// Гарантирует документ в Firestore после входа (Auth ≠ база данных).
+  Future<void> _mirrorAccountToFirestore(String userId) async {
+    if (!userId.startsWith('firebase_')) return;
+    final acc = await _userAccountService.getByUserId(userId);
+    if (acc != null) {
+      await UserAccountFirestoreSync.instance.pushAfterLocalSave(acc);
+    }
+  }
 
   /// Текущий ID пользователя (локальный user_xxx или firebase_uid)
   String? get currentUserId => _currentUserId;
@@ -66,6 +76,10 @@ class AuthService {
         email: credential.user!.email,
         plainPassword: password,
       );
+      await UserAccountFirestoreSync.instance.pullMergeIfRemoteNewer(
+        _currentUserId!,
+      );
+      await _mirrorAccountToFirestore(_currentUserId!);
       return const AuthResult(
         success: true,
         emailVerificationSent: true,
@@ -111,6 +125,10 @@ class AuthService {
         userId: _currentUserId!,
         email: credential.user!.email,
       );
+      await UserAccountFirestoreSync.instance.pullMergeIfRemoteNewer(
+        _currentUserId!,
+      );
+      await _mirrorAccountToFirestore(_currentUserId!);
       return const AuthResult(success: true);
     } on FirebaseAuthException catch (e) {
       String msg = 'Ошибка входа';
@@ -210,6 +228,10 @@ class AuthService {
         userId: _currentUserId!,
         email: user.email,
       );
+      await UserAccountFirestoreSync.instance.pullMergeIfRemoteNewer(
+        _currentUserId!,
+      );
+      await _mirrorAccountToFirestore(_currentUserId!);
       return;
     }
     final savedUserId =

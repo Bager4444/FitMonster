@@ -1,12 +1,9 @@
 # Active Context — FitMonster
 
-## Текущий фокус (сессия: 2026-03-20)
-- Реализация единой локальной БД пользователей (`Hive.users`)
-- Синхронизация авторизации, статистики, ачивок и медданных в единый аккаунт
-- Обновление приложения на Android-эмуляторе после миграции
-- Доработка AI-помощника на DeepSeek: безопасная конфигурация ключа и персонализация контекста из `UserAccount`
+## Текущий фокус
+- **Firestore:** синхронизация `UserAccount` (без `passwordHash`) — `UserAccountFirestoreSync`, путь `users/{uid}/sync/account`; push из `UserAccountService`, pull после входа/restore в `AuthService`. См. `docs/specs/firestore_sync_plan.md`.
+- Единая локальная БД пользователей (`Hive.users`), Firebase Auth (почта), AI на DeepSeek.
 - Текущая ветка: `Dev2`
-- Последний проверенный коммит: `13862d6` — docs: инициализация Memory Bank и добавление AGENTS.md
 
 ## Активный спринт
 **Спринт 3: Упражнения с ML** (75% готово)

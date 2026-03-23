@@ -7,11 +7,14 @@ import 'package:fitmonster/core/theme/theme_provider.dart';
 import 'package:fitmonster/core/constants/app_constants.dart';
 import 'package:fitmonster/core/app_navigator.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
+import 'package:fitmonster/core/services/user_account_firestore_sync.dart';
+import 'package:fitmonster/core/services/user_account_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
+import 'package:fitmonster/core/services/stats_service.dart';
+import 'package:fitmonster/features/diet/domain/services/diet_service.dart';
 import 'package:fitmonster/core/services/connectivity_service.dart';
 import 'package:fitmonster/features/diet/data/services/database_init_service.dart';
-import 'package:fitmonster/features/diet/data/services/food_database_service.dart';
 import 'package:fitmonster/features/diet/data/datasources/local_food_datasource.dart';
 import 'package:fitmonster/features/diet/data/repositories/food_repository.dart';
 import 'package:fitmonster/features/home/presentation/pages/home_page.dart';
@@ -22,6 +25,13 @@ void main() async {
 
   try {
     await Firebase.initializeApp();
+    UserAccountService().attachFirestorePush(
+      UserAccountFirestoreSync.instance.pushAfterLocalSave,
+    );
+    StatsService.onAfterStatsPersist =
+        UserAccountFirestoreSync.instance.onLocalStatsMaybeChanged;
+    DietService.onAfterProfileSaved =
+        UserAccountFirestoreSync.instance.onLocalStatsMaybeChanged;
   } catch (_) {
     // Firebase не настроен (нет google-services.json) — работаем только как гость
   }
@@ -72,7 +82,7 @@ class FitMonsterApp extends StatelessWidget {
         // Локальный источник продуктов (JSON → Hive)
         Provider(create: (_) => LocalFoodDatasource()),
         ProxyProvider<LocalFoodDatasource, FoodRepository>(
-          update: (_, local, __) => FoodRepository(local: local),
+          update: (_, local, _) => FoodRepository(local: local),
         ),
       ],
       child: Consumer<ThemeProvider>(
