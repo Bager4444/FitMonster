@@ -66,8 +66,8 @@
 ## Контроль изменений
 
 ```
-last_checked_commit: 13862d6
+last_checked_commit: 4259b8f
 branch: Dev2
-date: 2026-03-20
-message: docs: инициализация Memory Bank и добавление AGENTS.md
+date: 2026-03-21
+message: feat: учётная запись пользователя, профиль, упражнения и AI
 ```
