@@ -31,6 +31,7 @@
 ### 2026-03-24 — AGENTS.md и Project Deliverables
 - Корневой `AGENTS.md` синхронизирован с каноном `projects-tracker` (Memory Bank, deliverables, Biome без `*.md`, режимы планирования).
 - В `projectbrief.md` добавлен раздел **## Project Deliverables** (таблица `ID | Deliverable | Status | Weight`, сумма весов 100).
+- `progress.md`: в «Контроль изменений» указан `last_checked_commit: 6045806` (коммит синхронизации docs).
 
 ### 2026-03-21 — Документация сборки IPA (iOS)
 - `docs/build_ios_ipa.md`: аналог release APK для iPhone; ограничение Windows / отсутствие `flutter build ipa` в Windows-SDK
@@ -88,7 +89,7 @@
 ## Контроль изменений
 
 ```
-last_checked_commit: acf3eb6
+last_checked_commit: 6045806
 branch: Dev2
 date: 2026-03-24
 message: docs: синхронизация AGENTS.md с projects-tracker и таблица Project Deliverables
