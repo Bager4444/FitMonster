@@ -1,7 +1,7 @@
 # Progress — FitMonster
 
 ## Общий статус
-- Прогресс MVP: **55%**
+- Прогресс MVP по deliverables: см. `memory_bank/projectbrief.md` → **## Project Deliverables** (взвешенная готовность по статусам и весам).
 - Неделя: 9 из 15
 - Текущий спринт: Спринт 3 (Упражнения с ML) — 75%
 
@@ -27,6 +27,10 @@
 4. ⚠️ Тестовое покрытие ~15% (цель: 80%)
 
 ## Changelog
+
+### 2026-03-24 — AGENTS.md и Project Deliverables
+- Корневой `AGENTS.md` синхронизирован с каноном `projects-tracker` (Memory Bank, deliverables, Biome без `*.md`, режимы планирования).
+- В `projectbrief.md` добавлен раздел **## Project Deliverables** (таблица `ID | Deliverable | Status | Weight`, сумма весов 100).
 
 ### 2026-03-21 — Документация сборки IPA (iOS)
 - `docs/build_ios_ipa.md`: аналог release APK для iPhone; ограничение Windows / отсутствие `flutter build ipa` в Windows-SDK
@@ -84,8 +88,8 @@
 ## Контроль изменений
 
 ```
-last_checked_commit: 22b954f
+last_checked_commit: acf3eb6
 branch: Dev2
-date: 2026-03-23
-message: feat: Firestore синк аккаунта, метрик и диеты; Firebase ede5c; AI на главной
+date: 2026-03-24
+message: docs: синхронизация AGENTS.md с projects-tracker и таблица Project Deliverables
 ```

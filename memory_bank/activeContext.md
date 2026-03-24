@@ -1,6 +1,7 @@
 # Active Context — FitMonster
 
 ## Текущий фокус
+- Канон прогресса MVP: таблица **## Project Deliverables** в `memory_bank/projectbrief.md` (обновлять статусы после задач, влияющих на scope).
 - **Firestore:** синхронизация `UserAccount` (без `passwordHash`) — `UserAccountFirestoreSync`, путь `users/{uid}/sync/account`; push из `UserAccountService`, pull после входа/restore в `AuthService`. См. `docs/specs/firestore_sync_plan.md`.
 - **Рейтинг в профиле:** топ-12 и место пользователя по локальным аккаунтам в Hive; обновление позиций — `refreshRanks()` (и при необходимости push в облако).
 - Единая локальная БД пользователей (`Hive.users`), Firebase Auth (почта), AI на DeepSeek.
