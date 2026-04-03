@@ -74,12 +74,13 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   
   // Throttle setState для UI (не на каждый кадр)
   DateTime _lastUiUpdate = DateTime.now();
-  static const int _uiUpdateIntervalMs = 200;
+  static const int _uiUpdateIntervalMs = 150;
   
   // Флаг обработки кадра
   bool _isProcessingFrame = false;
   DateTime _lastFrameTime = DateTime.now();
-  static const int _targetFps = 12; // Чуть выше частота анализа позы для быстрее засчёта
+  /// Целевой поток инференса ML (мс между стартами кадров). Реальный FPS ≤ min(цель, 1000/время processImage).
+  static const int _targetFps = 35;
   int _frameSkipCounter = 0;
   static const int _frameSkipRate = 1; // Каждый кадр, прошедший FPS-ограничение
   
@@ -108,10 +109,12 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       
       final options = PoseDetectorOptions(
         mode: PoseDetectionMode.stream,
-        model: PoseDetectionModel.accurate,
+        // base — стриминговая модель BlazePose; по гайдам ML Kit до ~30 FPS на средних девайсах.
+        // accurate тяжелее и для «статичных» кадров, на видео часто ниже FPS.
+        model: PoseDetectionModel.base,
       );
       _poseDetector = PoseDetector(options: options);
-      debugPrint('✅ ML Kit PoseDetector initialized (stream mode, accurate model)');
+      debugPrint('✅ ML Kit PoseDetector initialized (stream mode, base model)');
     } catch (e) {
       debugPrint('❌ Error initializing ML Kit: $e');
       if (mounted) {
@@ -141,7 +144,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
       _cameraController = CameraController(
         frontCamera,
-        ResolutionPreset.medium,
+        // low: меньше пикселей → быстрее NV21 + ML Kit; основной рычаг к ~30–35+ FPS на девайсе
+        ResolutionPreset.low,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.yuv420,
       );
@@ -156,7 +160,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         debugPrint('✅ Камера инициализирована быстро, _isInitialized = true');
       }
       
-      debugPrint('✅ Camera initialized: ${frontCamera.lensDirection}, resolution: medium');
+        debugPrint('✅ Camera initialized: ${frontCamera.lensDirection}, resolution: low (ML stream)');
     } catch (e) {
       debugPrint('❌ Camera initialization error: $e');
       setState(() {
@@ -275,7 +279,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       // Ограничиваем FPS для снижения нагрузки
       final now = DateTime.now();
       final timeSinceLastFrame = now.difference(_lastFrameTime).inMilliseconds;
-      final minFrameInterval = 1000 ~/ _targetFps; // ~200ms для 5 FPS
+      final minFrameInterval = 1000 ~/ _targetFps; // ~28ms при 35 FPS
       
       if (timeSinceLastFrame < minFrameInterval) {
         return; // Пропускаем кадр

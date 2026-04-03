@@ -1,0 +1,13 @@
+{
+  "name": "fitmonster-functions",
+  "description": "Прокси OpenRouter для FitMonster (ключ только на сервере)",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.0"
+  },
+  "private": true
+}

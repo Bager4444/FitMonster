@@ -56,6 +56,8 @@ class UserAccountService {
     required String userId,
     String? email,
     String? plainPassword,
+    List<String>? allergies,
+    List<String>? contraindications,
   }) async {
     final current =
         await getByUserId(userId) ??
@@ -65,6 +67,8 @@ class UserAccountService {
       passwordHash: plainPassword != null && plainPassword.isNotEmpty
           ? hashPassword(plainPassword)
           : current.passwordHash,
+      allergies: allergies ?? current.allergies,
+      contraindications: contraindications ?? current.contraindications,
     );
     await _save(next);
     await migrateLegacyData(userId);
@@ -203,8 +207,13 @@ class UserAccountService {
         name: (profile.name != null && profile.name!.trim().isNotEmpty)
             ? profile.name!.trim()
             : current.name,
-        allergies: profile.allergies,
-        contraindications: profile.contraindications,
+        // Не затираем аллергии из регистрации, если в профиле питания они пустые
+        allergies: profile.allergies.isNotEmpty
+            ? profile.allergies
+            : current.allergies,
+        contraindications: profile.contraindications.isNotEmpty
+            ? profile.contraindications
+            : current.contraindications,
       );
     }
 

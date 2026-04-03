@@ -56,6 +56,8 @@ class AuthService {
   Future<AuthResult> registerWithEmailPassword({
     required String email,
     required String password,
+    List<String> allergies = const [],
+    List<String> contraindications = const [],
   }) async {
     try {
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
@@ -75,6 +77,8 @@ class AuthService {
         userId: _currentUserId!,
         email: credential.user!.email,
         plainPassword: password,
+        allergies: allergies,
+        contraindications: contraindications,
       );
       await UserAccountFirestoreSync.instance.pullMergeIfRemoteNewer(
         _currentUserId!,

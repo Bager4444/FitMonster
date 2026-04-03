@@ -1,5 +1,11 @@
 import 'dart:convert';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fitmonster/core/config/openrouter_user_key.dart';
 import 'package:fitmonster/core/models/user_account.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/features/ai/domain/models/ai_message.dart';
@@ -8,21 +14,82 @@ import 'package:fitmonster/features/profile/services/profile_service.dart';
 import 'package:fitmonster/features/profile/domain/models/app_profile.dart';
 import 'package:fitmonster/core/services/hive_service.dart';
 
-/// AI сервис с интеграцией DeepSeek API
-class DeepSeekAiService {
+/// AI-сервис через OpenRouter (OpenAI-совместимый chat completions).
+class OpenRouterAiService {
   static const String _messagesBox = HiveService.userBox;
   static const String _messagesKeyPrefix = 'ai_messages_';
 
-  // DeepSeek API настройки
-  static const String _apiUrl = 'https://api.deepseek.com/v1/chat/completions';
-  static const String _apiKey = String.fromEnvironment(
-    'DEEPSEEK_API_KEY',
+  static const String _apiUrl =
+      'https://openrouter.ai/api/v1/chat/completions';
+  static const String _prefsApiKey = 'openrouter_api_key';
+  static const String _apiKeyFromCompile = String.fromEnvironment(
+    'OPENROUTER_API_KEY',
     defaultValue: '',
   );
   static const String _model = String.fromEnvironment(
-    'DEEPSEEK_MODEL',
-    defaultValue: 'deepseek-chat',
+    'OPENROUTER_MODEL',
+    defaultValue: 'google/gemma-3n-e4b-it:free',
   );
+  /// Для лидерборда OpenRouter (опционально); пусто — заголовок не шлём.
+  static const String _httpReferer = String.fromEnvironment(
+    'OPENROUTER_HTTP_REFERER',
+    defaultValue: '',
+  );
+
+  /// Облачный прокси (Firebase Callable): после `firebase deploy` включи
+  /// `--dart-define=AI_USE_CLOUD_PROXY=true`, иначе будет NOT_FOUND.
+  static const bool _useCloudProxy = bool.fromEnvironment(
+    'AI_USE_CLOUD_PROXY',
+    defaultValue: false,
+  );
+
+  /// Регион должен совпадать с `region` в `functions/index.js`.
+  static const String _functionsRegion = String.fromEnvironment(
+    'FIREBASE_FUNCTIONS_REGION',
+    defaultValue: 'europe-west1',
+  );
+
+  bool _firebaseReady() => Firebase.apps.isNotEmpty;
+
+  bool _canUseCloudProxy() =>
+      _useCloudProxy &&
+      _firebaseReady() &&
+      FirebaseAuth.instance.currentUser != null;
+
+  /// Ключ: файл [kOpenRouterUserApiKey], затем SharedPreferences, затем `--dart-define=OPENROUTER_API_KEY=...`.
+  Future<String> resolveApiKey() async {
+    final fromFile = kOpenRouterUserApiKey.trim();
+    if (fromFile.isNotEmpty) return fromFile;
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(_prefsApiKey)?.trim();
+    if (stored != null && stored.isNotEmpty) return stored;
+    return _apiKeyFromCompile.trim();
+  }
+
+  Future<bool> isApiKeyConfigured() async {
+    if (_canUseCloudProxy()) return true;
+    final k = await resolveApiKey();
+    return k.isNotEmpty;
+  }
+
+  Future<bool> saveApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final t = key.trim();
+    if (t.isEmpty) {
+      await prefs.remove(_prefsApiKey);
+      await prefs.reload();
+      return prefs.getString(_prefsApiKey) == null;
+    }
+    final written = await prefs.setString(_prefsApiKey, t);
+    await prefs.reload();
+    final read = prefs.getString(_prefsApiKey);
+    return written && read == t;
+  }
+
+  Future<void> clearStoredApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsApiKey);
+  }
 
   final ProfileService _profileService = ProfileService();
   final AuthService _authService = AuthService();
@@ -33,7 +100,6 @@ class DeepSeekAiService {
     return '$_messagesKeyPrefix$userId';
   }
 
-  /// Получить историю сообщений
   Future<List<AiMessage>> getMessages() async {
     final data = HiveService.get(box: _messagesBox, key: _messagesKey());
     if (data == null) return [];
@@ -46,17 +112,14 @@ class DeepSeekAiService {
     return [];
   }
 
-  /// Сохранить сообщения
   Future<void> _saveMessages(List<AiMessage> messages) async {
     final data = messages.map((m) => m.toJson()).toList();
     await HiveService.put(box: _messagesBox, key: _messagesKey(), value: data);
   }
 
-  /// Отправить сообщение пользователя и получить ответ AI
   Future<AiMessage> sendMessage(String userMessage) async {
     final messages = await getMessages();
 
-    // Добавляем сообщение пользователя
     final userMsg = AiMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: userMessage,
@@ -64,8 +127,8 @@ class DeepSeekAiService {
       timestamp: DateTime.now(),
     );
     messages.add(userMsg);
+    await _saveMessages(messages);
 
-    // Генерируем ответ через DeepSeek API
     final aiResponse = await _generateAiResponse(userMessage, messages);
     messages.add(aiResponse);
 
@@ -73,15 +136,49 @@ class DeepSeekAiService {
     return aiResponse;
   }
 
-  /// Генерация ответа через DeepSeek API
+  Map<String, String> _requestHeaders(String apiKey) {
+    final h = <String, String>{
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $apiKey',
+      'X-OpenRouter-Title': 'FitMonster',
+    };
+    final ref = _httpReferer.trim();
+    if (ref.isNotEmpty) {
+      h['HTTP-Referer'] = ref;
+    }
+    return h;
+  }
+
+  Future<AiMessage?> _generateViaCloud(List<Map<String, String>> apiMessages) async {
+    final callable = FirebaseFunctions.instanceFor(region: _functionsRegion).httpsCallable(
+      'openrouterChat',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 90)),
+    );
+    final payload = <String, dynamic>{
+      'messages': apiMessages
+          .map((m) => <String, dynamic>{'role': m['role']!, 'content': m['content']!})
+          .toList(),
+      'model': _model,
+    };
+    final result = await callable.call(payload);
+    final raw = result.data;
+    if (raw is! Map) return null;
+    final text = raw['content'];
+    if (text is! String || text.trim().isEmpty) return null;
+    return AiMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      content: text.trim(),
+      isUser: false,
+      timestamp: DateTime.now(),
+      type: _detectMessageType(text),
+    );
+  }
+
   Future<AiMessage> _generateAiResponse(
     String userMessage,
     List<AiMessage> history,
   ) async {
     try {
-      if (_apiKey.isEmpty) {
-        return _getNoApiKeyResponse();
-      }
       final profile = await _profileService.getAppProfile();
       final xp = await _profileService.getExperience();
       final level = ProfileService.levelFromXp(xp);
@@ -90,71 +187,223 @@ class DeepSeekAiService {
           ? null
           : await _userAccountService.getByUserId(userId);
 
-      // Создаем системный промпт с контекстом пользователя
       final systemPrompt = _buildSystemPrompt(profile, level, account);
+      final apiMessages = _buildOpenRouterMessages(history, systemPrompt);
 
-      // Формируем историю для API
-      final apiMessages = _buildApiMessages(history, systemPrompt);
+      if (_canUseCloudProxy()) {
+        try {
+          final cloud = await _generateViaCloud(apiMessages);
+          if (cloud != null) return cloud;
+        } on FirebaseFunctionsException catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('OpenRouter cloud: ${e.code} ${e.message}\n$st');
+          }
+          final apiKey = await resolveApiKey();
+          if (apiKey.isEmpty) {
+            return _getFallbackResponse(
+              userMessage,
+              prefix: _prefixForCloudFailure(e),
+            );
+          }
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('OpenRouter cloud: $e\n$st');
+          }
+          final apiKey = await resolveApiKey();
+          if (apiKey.isEmpty) {
+            return _getFallbackResponse(
+              userMessage,
+              prefix:
+                  'Облачный ИИ временно недоступен.\n'
+                  'Войди по почте и проверь деплой функции openrouterChat, либо укажи свой ключ OpenRouter.\n\n'
+                  'Офлайн-подсказка:',
+            );
+          }
+        }
+      }
 
-      // Отправляем запрос к DeepSeek API
+      final apiKey = await resolveApiKey();
+      if (apiKey.isEmpty) {
+        return _getNoApiKeyResponse();
+      }
+
       final response = await http
           .post(
             Uri.parse(_apiUrl),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $_apiKey',
-            },
+            headers: _requestHeaders(apiKey),
             body: jsonEncode({
               'model': _model,
               'messages': apiMessages,
               'temperature': 0.7,
-              'max_tokens': 1000,
+              'max_tokens': 1800,
             }),
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 45));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        final aiContent = data['choices'][0]['message']['content'];
-
-        return AiMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          content: aiContent,
-          isUser: false,
-          timestamp: DateTime.now(),
-          type: _detectMessageType(aiContent),
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final aiContent = _parseOpenRouterAssistantText(data);
+        if (aiContent != null && aiContent.isNotEmpty) {
+          return AiMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            content: aiContent.trim(),
+            isUser: false,
+            timestamp: DateTime.now(),
+            type: _detectMessageType(aiContent),
+          );
+        }
+        return _getFallbackResponse(
+          userMessage,
+          prefix: 'Пустой ответ модели. Офлайн-подсказка:',
         );
-      } else {
-        // Fallback на простой ответ при ошибке API
-        return _getFallbackResponse(userMessage);
       }
-    } catch (e) {
-      // Fallback на простой ответ при любой ошибке
-      return _getFallbackResponse(userMessage);
+
+      final errDetail = _parseOpenRouterErrorBody(response.bodyBytes);
+      final code = response.statusCode;
+      if (code == 429) {
+        return _getFallbackResponse(
+          userMessage,
+          prefix:
+              'Превышен лимит OpenRouter (429). Подожди или проверь квоту на https://openrouter.ai/docs/faq\n\n'
+              'Офлайн-подсказка:',
+        );
+      }
+      if (code == 401 || code == 402) {
+        return _getFallbackResponse(
+          userMessage,
+          prefix:
+              'Ключ OpenRouter отклонён или нет кредитов (код $code)${errDetail != null ? ': $errDetail' : ''}.\n'
+              'Проверь https://openrouter.ai/credits и ключ на https://openrouter.ai/keys\n\n'
+              'Офлайн-подсказка:',
+        );
+      }
+      return _getFallbackResponse(
+        userMessage,
+        prefix:
+            'Не удалось получить ответ ИИ (код $code)${errDetail != null ? ': $errDetail' : ''}.\n'
+            'Проверь ключ на https://openrouter.ai/keys , модель $_model (список: https://openrouter.ai/models ) и интернет.\n'
+            'Офлайн-подсказка:',
+      );
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('OpenRouterAiService: $e\n$st');
+      }
+      return _getFallbackResponse(
+        userMessage,
+        prefix:
+            'Ошибка сети или таймаут.\n'
+            'Повтори запрос позже.\n'
+            'Офлайн-подсказка:',
+      );
     }
   }
 
+  String _prefixForCloudFailure(FirebaseFunctionsException e) {
+    final code = e.code;
+    final msg = (e.message ?? '').trim();
+    final msgUp = msg.toUpperCase();
+    if (code == 'unauthenticated') {
+      return 'Нужен вход по почте в приложении (Firebase), чтобы использовать общий ИИ без своего ключа.\n\n'
+          'Офлайн-подсказка:';
+    }
+    if (code == 'failed-precondition') {
+      return 'На сервере не задан секрет OPENROUTER_API_KEY (см. functions/README.md).\n\nОфлайн-подсказка:';
+    }
+    // Частая причина: функция не задеплоена или регион в приложении ≠ регион деплоя.
+    if (code == 'not-found' ||
+        code == 'functions/not-found' ||
+        msgUp.contains('NOT_FOUND')) {
+      return 'Облачная функция openrouterChat не найдена в Firebase (NOT_FOUND).\n\n'
+          'Что сделать:\n'
+          '• В каталоге проекта: firebase deploy --only functions\n'
+          '• Задать секрет: firebase functions:secrets:set OPENROUTER_API_KEY\n'
+          '• Регион в приложении сейчас: $_functionsRegion — должен совпадать с region в functions/index.js\n'
+          '• Проект Firebase в google-services.json = тот же, куда деплоишь\n\n'
+          'Пока без сервера: сборка с --dart-define=AI_USE_CLOUD_PROXY=false и свой ключ OpenRouter (файл или меню ⋮).\n\n'
+          'Офлайн-подсказка:';
+    }
+    return 'Облачный ИИ: $code${msg.isNotEmpty ? ' $msg' : ''}\n\nОфлайн-подсказка:';
+  }
+
+  List<Map<String, String>> _buildOpenRouterMessages(
+    List<AiMessage> history,
+    String systemPrompt,
+  ) {
+    const maxTurns = 12;
+    const maxCharsPerMessage = 3200;
+    final slice = history.length > maxTurns
+        ? history.sublist(history.length - maxTurns)
+        : history;
+
+    final messages = <Map<String, String>>[
+      {'role': 'system', 'content': systemPrompt},
+    ];
+    for (final msg in slice) {
+      var text = msg.content;
+      if (text.length > maxCharsPerMessage) {
+        text = '${text.substring(0, maxCharsPerMessage)}…';
+      }
+      messages.add({
+        'role': msg.isUser ? 'user' : 'assistant',
+        'content': text,
+      });
+    }
+    return messages;
+  }
+
+  String? _parseOpenRouterAssistantText(Map<String, dynamic> data) {
+    final choices = data['choices'];
+    if (choices is! List || choices.isEmpty) return null;
+    final first = choices[0];
+    if (first is! Map<String, dynamic>) return null;
+    final message = first['message'];
+    if (message is! Map<String, dynamic>) return null;
+    final raw = message['content'];
+    if (raw is String) {
+      final s = raw.trim();
+      return s.isEmpty ? null : s;
+    }
+    return null;
+  }
+
+  String? _parseOpenRouterErrorBody(List<int> bodyBytes) {
+    try {
+      final data = jsonDecode(utf8.decode(bodyBytes));
+      if (data is! Map<String, dynamic>) return null;
+      final err = data['error'];
+      if (err is Map<String, dynamic> && err['message'] is String) {
+        return err['message'] as String;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   AiMessage _getNoApiKeyResponse() {
+    final cloudHint = _useCloudProxy && _firebaseReady()
+        ? 'Если задеплоена функция openrouterChat: войди по почте в приложении — '
+            'общий ИИ работает без ключа на устройстве (см. functions/README.md).\n\n'
+        : '';
     return AiMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content:
-          '⚙️ DeepSeek API ключ не настроен.\n\n'
-          'Чтобы включить онлайн-ИИ, запусти приложение с параметром:\n'
-          '--dart-define=DEEPSEEK_API_KEY=your_key\n\n'
-          'Пока отвечаю в офлайн-режиме по встроенной базе знаний 💪',
+          '⚙️ Нет доступа к OpenRouter.\n\n'
+          '$cloudHint'
+          'Свой ключ: файл lib/core/config/openrouter_user_key.dart '
+          '(kOpenRouterUserApiKey) — https://openrouter.ai/keys\n\n'
+          'Или меню ⋮ → «Ключ API OpenRouter», '
+          'либо сборка: --dart-define=OPENROUTER_API_KEY=...\n\n'
+          'Пока отвечаю офлайн по встроенной базе знаний 💪',
       isUser: false,
       timestamp: DateTime.now(),
       type: AiMessageType.text,
     );
   }
 
-  /// Fallback ответ при ошибке API с расширенной базой знаний
-  AiMessage _getFallbackResponse(String userMessage) {
+  AiMessage _getFallbackResponse(String userMessage, {String? prefix}) {
     final lower = userMessage.toLowerCase();
     String content;
     AiMessageType type = AiMessageType.text;
 
-    // Конкретные группы мышц
     if (lower.contains('бицепс') || lower.contains('руки')) {
       content = _getBicepsWorkout();
       type = AiMessageType.workout;
@@ -178,9 +427,7 @@ class DeepSeekAiService {
     } else if (lower.contains('плечи') || lower.contains('дельты')) {
       content = _getShouldersWorkout();
       type = AiMessageType.workout;
-    }
-    // Питание
-    else if (lower.contains('после тренировки') ||
+    } else if (lower.contains('после тренировки') ||
         lower.contains('после тренировок')) {
       content = _getPostWorkoutNutrition();
       type = AiMessageType.nutrition;
@@ -204,52 +451,44 @@ class DeepSeekAiService {
         lower.contains('есть')) {
       content = _getGeneralNutrition();
       type = AiMessageType.nutrition;
-    }
-    // Мотивация
-    else if (lower.contains('мотивац') ||
+    } else if (lower.contains('мотивац') ||
         lower.contains('устал') ||
         lower.contains('лень') ||
         lower.contains('не хочу')) {
       content = _getMotivation();
       type = AiMessageType.motivation;
-    }
-    // Общие тренировки
-    else if (lower.contains('трениров') ||
+    } else if (lower.contains('трениров') ||
         lower.contains('упражн') ||
         lower.contains('начать')) {
       content = _getGeneralWorkout();
       type = AiMessageType.workout;
-    }
-    // Восстановление
-    else if (lower.contains('восстановление') ||
+    } else if (lower.contains('восстановление') ||
         lower.contains('отдых') ||
         lower.contains('болят')) {
       content = _getRecoveryInfo();
       type = AiMessageType.text;
-    }
-    // Приветствие
-    else if (lower.contains('привет') ||
+    } else if (lower.contains('привет') ||
         lower.contains('здравствуй') ||
         lower.contains('hello')) {
       content = _getGreeting();
       type = AiMessageType.text;
-    }
-    // Дефолтный ответ
-    else {
+    } else {
       content = _getDefaultResponse();
       type = AiMessageType.text;
     }
 
+    final fullContent =
+        prefix != null && prefix.trim().isNotEmpty
+            ? '${prefix.trim()}\n\n$content'
+            : content;
     return AiMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: content,
+      content: fullContent,
       isUser: false,
       timestamp: DateTime.now(),
       type: type,
     );
   }
-
-  // === ТРЕНИРОВКИ ===
 
   String _getBicepsWorkout() {
     return '💪 Тренировка бицепса:\n\n'
@@ -397,8 +636,6 @@ class DeepSeekAiService {
         'Главное - регулярность! 🎯';
   }
 
-  // === ПИТАНИЕ ===
-
   String _getPostWorkoutNutrition() {
     return '🍎 Питание после тренировки:\n\n'
         '⏰ В течение 30-60 минут:\n'
@@ -508,8 +745,6 @@ class DeepSeekAiService {
         'Питание = 70% успеха! 🎯';
   }
 
-  // === МОТИВАЦИЯ ===
-
   String _getMotivation() {
     final motivations = [
       '💪 Каждая тренировка делает тебя сильнее!\n\n'
@@ -517,23 +752,19 @@ class DeepSeekAiService {
           '• Трудно = растешь\n'
           '• Легко = стоишь на месте\n\n'
           'Не сдавайся, результаты уже близко! 🔥',
-
       '🌟 Чемпионы не рождаются, они создаются!\n\n'
           'Твой путь:\n'
           '• Сегодня лучше, чем вчера\n'
           '• Завтра лучше, чем сегодня\n\n'
           'Продолжай тренироваться! ⚡',
-
       '🚀 Ты уже на правильном пути!\n\n'
           'Каждое повторение приближает к цели.\n'
           'Каждая тренировка - это победа.\n\n'
           'Не останавливайся! 💪',
-
       '🏆 Успех = постоянство + время\n\n'
           'Не важно, как медленно ты идешь,\n'
           'главное - не останавливаться!\n\n'
           'Ты молодец! Продолжай! 🔥',
-
       '⚡ Боль временна, гордость вечна!\n\n'
           'Через месяц ты не узнаешь себя.\n'
           'Через год ты будешь другим человеком.\n\n'
@@ -542,8 +773,6 @@ class DeepSeekAiService {
 
     return motivations[DateTime.now().second % motivations.length];
   }
-
-  // === ВОССТАНОВЛЕНИЕ ===
 
   String _getRecoveryInfo() {
     return '😌 Восстановление:\n\n'
@@ -563,8 +792,6 @@ class DeepSeekAiService {
         '• Активное восстановление (ходьба, плавание)\n\n'
         'Мышцы растут во время отдыха! 💤';
   }
-
-  // === ОБЩИЕ ОТВЕТЫ ===
 
   String _getGreeting() {
     return '👋 Привет! Я твой персональный фитнес-ассистент.\n\n'
@@ -593,7 +820,6 @@ class DeepSeekAiService {
         '• "Мотивируй меня!"';
   }
 
-  /// Создаем системный промпт с контекстом пользователя
   String _buildSystemPrompt(
     AppProfile profile,
     int level,
@@ -613,12 +839,17 @@ class DeepSeekAiService {
     return '''Ты - персональный фитнес-ассистент в приложении FitMonster. 
 Твоя задача - помогать пользователям с тренировками, питанием и мотивацией.
 
+МЕДИЦИНСКИЙ ДИСКЛЕЙМЕР:
+- Ты не врач и не заменяешь консультацию специалиста.
+- При острой боли, головокружении, одышке в покое, подозрении на травму — советуй обратиться к врачу и не давай нагрузку «на свой страх и риск».
+
 ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ:
 - Имя: ${profile.displayName}
 - Уровень: $level
 - Подписка: $subscription
 - Рейтинг (мир/регион): $worldRank / $regionRank
 - Средний процент техники: $avgScore%
+- Упражнений в учёте (всего): ${account?.totalExercises ?? 0}
 - Противопоказания: $contraindications
 - Аллергии: $allergies
 
@@ -696,32 +927,6 @@ class DeepSeekAiService {
 - Мотивируй и поддерживай пользователя''';
   }
 
-  /// Формируем сообщения для API
-  List<Map<String, String>> _buildApiMessages(
-    List<AiMessage> history,
-    String systemPrompt,
-  ) {
-    final messages = <Map<String, String>>[];
-
-    // Добавляем системный промпт
-    messages.add({'role': 'system', 'content': systemPrompt});
-
-    // Добавляем последние 10 сообщений из истории для контекста
-    final recentHistory = history.length > 10
-        ? history.sublist(history.length - 10)
-        : history;
-
-    for (final msg in recentHistory) {
-      messages.add({
-        'role': msg.isUser ? 'user' : 'assistant',
-        'content': msg.content,
-      });
-    }
-
-    return messages;
-  }
-
-  /// Определяем тип сообщения по содержимому
   AiMessageType _detectMessageType(String content) {
     final lower = content.toLowerCase();
 
@@ -748,7 +953,6 @@ class DeepSeekAiService {
     return AiMessageType.text;
   }
 
-  /// Очистить историю
   Future<void> clearHistory() async {
     await HiveService.delete(box: _messagesBox, key: _messagesKey());
   }

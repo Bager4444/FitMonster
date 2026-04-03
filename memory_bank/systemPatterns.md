@@ -15,7 +15,7 @@ lib/
 │   ├── theme/                 # Темы: app_theme, glass_theme, theme_provider
 │   └── widgets/               # Переиспользуемые виджеты
 └── features/
-    ├── ai/                    # AI-ассистент (DeepSeek API)
+    ├── ai/                    # AI-ассистент (OpenRouter API)
     ├── auth/                  # Авторизация (Firebase Auth)
     ├── diet/                  # Диета и трекер питания
     ├── exercises/             # Упражнения + ML-анализ

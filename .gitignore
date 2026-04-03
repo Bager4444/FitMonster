@@ -3,6 +3,9 @@
 
 .pub/
 
+# Локальный ключ Gemini в конфиге запуска (не коммитить)
+.vscode/launch.json
+
 .idea/
 .vagrant/
 .sconsign.dblite
@@ -50,3 +53,6 @@ app.*.map.json
 flutter_*.log
 flutter_analysis_report.json
 flutter_input.txt
+
+# Firebase Functions
+functions/node_modules/

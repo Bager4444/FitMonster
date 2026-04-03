@@ -41,7 +41,7 @@
 - `permission_handler: ^12.0.1`
 
 ### AI-ассистент
-- DeepSeek API (внешний HTTP, через `dio`)
+- OpenRouter API: клиент `package:http` и/или `cloud_functions` → Callable `openrouterChat` (Node 20 в `functions/`, секрет OpenRouter в Secret Manager)
 - Документация: `lib/features/ai/`
 
 ### Dev-зависимости

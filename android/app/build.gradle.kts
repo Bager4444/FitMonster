@@ -26,8 +26,9 @@ android {
         // Минимальная версия Android для ML Kit и Camera
         minSdk = flutter.minSdkVersion  // Android 5.0 для ML Kit
         targetSdk = 36  // Обновлено до версии 36
-        versionCode = 1
-        versionName = "1.0.0"
+        // Берём из pubspec (version: x.y.z+build) — иначе versionCode всегда 1 и обновления «не видны»
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
         
         // Поддержка многоязычности
         resConfigs("en", "ru")

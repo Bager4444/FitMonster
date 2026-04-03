@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FitMonster (свой ключ OpenRouter, без облака)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define=AI_USE_CLOUD_PROXY=false"
+      ]
+    },
+    {
+      "name": "FitMonster (облачный ИИ после firebase deploy)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define=AI_USE_CLOUD_PROXY=true",
+        "--dart-define=FIREBASE_FUNCTIONS_REGION=europe-west1"
+      ]
+    }
+  ]
+}

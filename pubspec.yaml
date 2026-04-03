@@ -15,7 +15,7 @@ description: "FitMonster - фитнес-приложение с проверко
 # This version is used _only_ for the Runner app, which is used if you just do
 # a `flutter run`. It has no impact on any other native host app that you embed
 # your Flutter project into.
-version: 1.0.0+1
+version: 1.1.0+7
 
 environment:
   sdk: ^3.10.1
@@ -31,8 +31,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # Firebase Auth (почта + пароль, проверка почты)
-  firebase_core: ^3.8.1
-  firebase_auth: ^5.3.3
+  firebase_core: ^4.6.0
+  firebase_auth: ^6.3.0
   
   # Apple Sign-In (только для iOS)
   # sign_in_with_apple: ^5.0.0
@@ -40,41 +40,42 @@ dependencies:
   # Local Storage
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  path_provider: ^2.1.2
-  shared_preferences: ^2.2.2
+  path_provider: ^2.1.5
+  shared_preferences: ^2.5.4
   
   # CSV parsing for data import
-  csv: ^6.0.0
+  csv: ^8.0.0
   
   # State Management
-  provider: ^6.1.1
+  provider: ^6.1.5+1
   
   # UI
-  fl_chart: ^1.1.1
+  fl_chart: ^1.2.0
   intl: ^0.20.2
   
   # Camera
-  camera: ^0.11.3
-  mobile_scanner: ^7.1.4
+  camera: ^0.12.0+1
+  mobile_scanner: ^7.2.0
   
   # Calendar
-  table_calendar: ^3.1.2
+  table_calendar: ^3.2.0
   
   # Video
-  video_player: ^2.8.1
+  video_player: ^2.11.1
   file_picker: ^10.3.10
-  image_picker: ^1.0.4
+  image_picker: ^1.2.1
   permission_handler: ^12.0.1
   
   # ML Kit для отслеживания позы
-  google_mlkit_pose_detection: ^0.14.0
+  google_mlkit_pose_detection: ^0.14.1
   
   # Network & Connectivity
-  dio: ^5.4.0
+  dio: ^5.9.2
   connectivity_plus: ^7.0.0
-  crypto: ^3.0.3
-  http: ^1.2.2
-  cloud_firestore: ^5.6.12
+  crypto: ^3.0.7
+  http: ^1.6.0
+  cloud_firestore: ^6.2.0
+  cloud_functions: ^6.0.3
 
 dev_dependencies:
   flutter_test:
@@ -86,12 +87,12 @@ dev_dependencies:
     sdk: flutter
   mockito: ^5.4.4
   
-  # Code generation
-  build_runner: ^2.4.8
+  # Code generation (build_runner 2.9+ тянет build ^4; hive_generator 2.0.1 требует build ^2)
+  build_runner: ^2.4.13
   hive_generator: ^2.0.1
 
   # Иконка приложения
-  flutter_launcher_icons: ^0.14.3
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

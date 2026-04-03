@@ -4,7 +4,7 @@
 - Канон прогресса MVP: таблица **## Project Deliverables** в `memory_bank/projectbrief.md` (обновлять статусы после задач, влияющих на scope).
 - **Firestore:** синхронизация `UserAccount` (без `passwordHash`) — `UserAccountFirestoreSync`, путь `users/{uid}/sync/account`; push из `UserAccountService`, pull после входа/restore в `AuthService`. См. `docs/specs/firestore_sync_plan.md`.
 - **Рейтинг в профиле:** топ-12 и место пользователя по локальным аккаунтам в Hive; обновление позиций — `refreshRanks()` (и при необходимости push в облако).
-- Единая локальная БД пользователей (`Hive.users`), Firebase Auth (почта), AI на DeepSeek.
+- Единая локальная БД пользователей (`Hive.users`), Firebase Auth (почта), AI на OpenRouter (файл `lib/core/config/openrouter_user_key.dart`, опционально SharedPreferences / `OPENROUTER_API_KEY`).
 - Текущая ветка: `Dev2`
 
 ## Активный спринт
@@ -25,4 +25,4 @@
 
 ## Известные неопределённости
 - Точный шаблон активной темы (тёмная/светлая) — см. `lib/core/theme/`
-- AI-ассистент (DeepSeek API) — статус интеграции требует уточнения
+- AI-ассистент (OpenRouter): по умолчанию прямой вызов со своим ключом; облако — `AI_USE_CLOUD_PROXY=true` после `firebase deploy` (Callable `openrouterChat`, секрет `OPENROUTER_API_KEY`, регион `europe-west1`). См. `functions/README.md`.

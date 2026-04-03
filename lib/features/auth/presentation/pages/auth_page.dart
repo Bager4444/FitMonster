@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fitmonster/core/constants/common_allergies.dart';
+import 'package:fitmonster/core/constants/common_contraindications.dart';
 import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/core/services/auth_service.dart';
 import 'package:fitmonster/core/app_navigator.dart';
@@ -18,17 +20,26 @@ class _AuthPageState extends State<AuthPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _allergiesOtherController = TextEditingController();
+  final _contraindicationsOtherController = TextEditingController();
 
   bool _isRegister = false;
   bool _loading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  /// Отмечено «нет аллергий» — остальное игнорируем при регистрации.
+  bool _noFoodAllergies = false;
+  final Set<String> _selectedAllergies = {};
+  bool _noContraindications = false;
+  final Set<String> _selectedContraindications = {};
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _allergiesOtherController.dispose();
+    _contraindicationsOtherController.dispose();
     super.dispose();
   }
 
@@ -55,6 +66,28 @@ class _AuthPageState extends State<AuthPage> {
     return null;
   }
 
+  List<String> _collectAllergiesForRegister() {
+    if (_noFoodAllergies) return [];
+    final out = <String>{..._selectedAllergies};
+    final raw = _allergiesOtherController.text;
+    for (final part in raw.split(',')) {
+      final t = part.trim();
+      if (t.isNotEmpty) out.add(t);
+    }
+    return out.toList();
+  }
+
+  List<String> _collectContraindicationsForRegister() {
+    if (_noContraindications) return [];
+    final out = <String>{..._selectedContraindications};
+    final raw = _contraindicationsOtherController.text;
+    for (final part in raw.split(',')) {
+      final t = part.trim();
+      if (t.isNotEmpty) out.add(t);
+    }
+    return out.toList();
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
@@ -63,6 +96,8 @@ class _AuthPageState extends State<AuthPage> {
       result = await _auth.registerWithEmailPassword(
         email: _emailController.text,
         password: _passwordController.text,
+        allergies: _collectAllergiesForRegister(),
+        contraindications: _collectContraindicationsForRegister(),
       );
     } else {
       result = await _auth.signInWithEmailPassword(
@@ -179,12 +214,28 @@ class _AuthPageState extends State<AuthPage> {
                           ),
                           validator: _validateConfirm,
                         ),
+                        const SizedBox(height: 24),
+                        _buildAllergiesBlock(),
+                        const SizedBox(height: 28),
+                        _buildContraindicationsBlock(),
                       ],
                       const SizedBox(height: 24),
                       _buildGradientButton(),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: _loading ? null : () => setState(() => _isRegister = !_isRegister),
+                        onPressed: _loading
+                            ? null
+                            : () => setState(() {
+                                  _isRegister = !_isRegister;
+                                  if (!_isRegister) {
+                                    _noFoodAllergies = false;
+                                    _selectedAllergies.clear();
+                                    _allergiesOtherController.clear();
+                                    _noContraindications = false;
+                                    _selectedContraindications.clear();
+                                    _contraindicationsOtherController.clear();
+                                  }
+                                }),
                         child: Text(
                           _isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться',
                           style: const TextStyle(color: GlassTheme.textPrimary),
@@ -214,6 +265,223 @@ class _AuthPageState extends State<AuthPage> {
         ],
       ),
     ),
+    );
+  }
+
+  /// Стили чипов без FilterChipThemeData (совместимость со старым Flutter SDK).
+  Widget _authFilterChip({
+    required Widget label,
+    required bool selected,
+    required ValueChanged<bool>? onSelected,
+  }) {
+    return FilterChip(
+      label: label,
+      selected: selected,
+      onSelected: onSelected,
+      backgroundColor: Colors.white.withValues(alpha: 0.08),
+      selectedColor: GlassTheme.gradientTop.withValues(alpha: 0.55),
+      checkmarkColor: Colors.white,
+      labelStyle: const TextStyle(color: GlassTheme.textPrimary, fontSize: 13),
+      side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+    );
+  }
+
+  Widget _buildAllergiesBlock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.health_and_safety_outlined,
+              color: GlassTheme.glowCyan.withValues(alpha: 0.95),
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Пищевые аллергии',
+                style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Укажите, если есть — это попадёт в профиль и в советы ИИ. Можно пропустить.',
+          style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        _authFilterChip(
+          label: const Text('Нет пищевых аллергий'),
+          selected: _noFoodAllergies,
+          onSelected: (v) {
+            setState(() {
+              _noFoodAllergies = v;
+              if (v) {
+                _selectedAllergies.clear();
+                _allergiesOtherController.clear();
+              }
+            });
+          },
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: CommonAllergies.labels.map((label) {
+            final selected = !_noFoodAllergies && _selectedAllergies.contains(label);
+            return _authFilterChip(
+              label: Text(label),
+              selected: selected,
+              onSelected: _noFoodAllergies
+                  ? null
+                  : (v) {
+                      setState(() {
+                        if (v) {
+                          _selectedAllergies.add(label);
+                        } else {
+                          _selectedAllergies.remove(label);
+                        }
+                      });
+                    },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _allergiesOtherController,
+          enabled: !_noFoodAllergies,
+          maxLines: 2,
+          onChanged: (_) {
+            if (_noFoodAllergies) {
+              setState(() => _noFoodAllergies = false);
+            }
+          },
+          style: const TextStyle(color: GlassTheme.textPrimary, fontSize: 14),
+          decoration: InputDecoration(
+            labelText: 'Другое (через запятую)',
+            hintText: 'Например: клубника, мёд',
+            labelStyle: const TextStyle(color: GlassTheme.textSecondary),
+            hintStyle: TextStyle(color: GlassTheme.textSecondary.withValues(alpha: 0.7)),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.1),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: GlassTheme.glowCyan, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContraindicationsBlock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.medical_information_outlined,
+              color: GlassTheme.glowCyan.withValues(alpha: 0.95),
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Противопоказания к нагрузкам',
+                style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Отметьте, если есть ограничения по здоровью. ИИ и рекомендации будут осторожнее. Можно пропустить.',
+          style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        _authFilterChip(
+          label: const Text('Нет известных противопоказаний'),
+          selected: _noContraindications,
+          onSelected: (v) {
+            setState(() {
+              _noContraindications = v;
+              if (v) {
+                _selectedContraindications.clear();
+                _contraindicationsOtherController.clear();
+              }
+            });
+          },
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: CommonContraindications.labels.map((label) {
+            final selected =
+                !_noContraindications && _selectedContraindications.contains(label);
+            return _authFilterChip(
+              label: Text(label),
+              selected: selected,
+              onSelected: _noContraindications
+                  ? null
+                  : (v) {
+                      setState(() {
+                        if (v) {
+                          _selectedContraindications.add(label);
+                        } else {
+                          _selectedContraindications.remove(label);
+                        }
+                      });
+                    },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _contraindicationsOtherController,
+          enabled: !_noContraindications,
+          maxLines: 2,
+          onChanged: (_) {
+            if (_noContraindications) {
+              setState(() => _noContraindications = false);
+            }
+          },
+          style: const TextStyle(color: GlassTheme.textPrimary, fontSize: 14),
+          decoration: InputDecoration(
+            labelText: 'Другое (через запятую)',
+            hintText: 'Например: грыжа поясницы',
+            labelStyle: const TextStyle(color: GlassTheme.textSecondary),
+            hintStyle: TextStyle(color: GlassTheme.textSecondary.withValues(alpha: 0.7)),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.1),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: GlassTheme.glowCyan, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+        ),
+      ],
     );
   }
 

@@ -38,8 +38,24 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   }
 
   Future<void> _loadExistingProfile() async {
+    final userId = AuthService().currentUserId;
     final profile = await DietService.getUserProfile();
+    final account =
+        userId != null ? await UserAccountService().getByUserId(userId) : null;
+
     if (profile != null && mounted) {
+      var allergies = List<String>.from(profile.allergies);
+      if (allergies.isEmpty &&
+          account != null &&
+          account.allergies.isNotEmpty) {
+        allergies = List<String>.from(account.allergies);
+      }
+      var contraindications = List<String>.from(profile.contraindications);
+      if (contraindications.isEmpty &&
+          account != null &&
+          account.contraindications.isNotEmpty) {
+        contraindications = List<String>.from(account.contraindications);
+      }
       setState(() {
         _ageController.text = profile.age.toString();
         _heightController.text = profile.height.toString();
@@ -47,14 +63,22 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         _gender = profile.gender;
         _activityLevel = profile.activityLevel;
         _goal = profile.goal;
-        _selectedAllergies = List.from(profile.allergies);
-        _selectedContraindications = List.from(profile.contraindications);
+        _selectedAllergies = allergies;
+        _selectedContraindications = contraindications;
         _isLoading = false;
       });
     } else {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (account != null && account.allergies.isNotEmpty) {
+            _selectedAllergies = List<String>.from(account.allergies);
+          }
+          if (account != null && account.contraindications.isNotEmpty) {
+            _selectedContraindications = List<String>.from(account.contraindications);
+          }
+          _isLoading = false;
+        });
+      }
     }
   }
 
