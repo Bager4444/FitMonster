@@ -33,16 +33,17 @@ class _AiChatPageState extends State<AiChatPage> {
   }
 
   Future<void> _showOpenRouterKeyDialog() async {
-    final controller = TextEditingController();
     final hadKey = await _aiService.isApiKeyConfigured();
+    final fromPrefs = await _aiService.prefsStoredKeyForDialog();
+    final controller = TextEditingController(text: fromPrefs);
     if (!mounted) return;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1B2A),
+        backgroundColor: context.fm.dialogBackground,
         title: Text(
           'Подключение OpenRouter',
-          style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+          style: context.fm.titleStyle.copyWith(fontSize: 18),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -50,16 +51,18 @@ class _AiChatPageState extends State<AiChatPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Ключ проще вставить в файл lib/core/config/openrouter_user_key.dart '
-                '(kOpenRouterUserApiKey). Сюда — только на этом устройстве: '
-                'создай ключ на https://openrouter.ai/keys',
-                style: GlassTheme.bodyStyle,
+                'Сохранённый здесь ключ хранится на устройстве. '
+                'Ключ из .dart-файла в поле не показывается — после правки файла нужен новый APK.\n'
+                'Создать ключ: https://openrouter.ai/keys',
+                style: context.fm.bodyStyle,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
                 obscureText: true,
                 autocorrect: false,
+                keyboardType: TextInputType.visiblePassword,
+                enableSuggestions: false,
                 decoration: InputDecoration(
                   hintText: 'sk-or-v1-...',
                   hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
@@ -69,10 +72,10 @@ class _AiChatPageState extends State<AiChatPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: GlassTheme.glowCyan),
+                    borderSide: BorderSide(color: context.fm.glowCyan),
                   ),
                 ),
-                style: const TextStyle(color: GlassTheme.textPrimary),
+                style: TextStyle(color: context.fm.textPrimary),
               ),
             ],
           ),
@@ -89,7 +92,7 @@ class _AiChatPageState extends State<AiChatPage> {
             ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Отмена', style: GlassTheme.bodyStyle.copyWith(color: GlassTheme.textPrimary)),
+            child: Text('Отмена', style: context.fm.bodyStyle.copyWith(color: context.fm.textPrimary)),
           ),
           FilledButton(
             onPressed: () async {
@@ -97,7 +100,7 @@ class _AiChatPageState extends State<AiChatPage> {
               if (!ctx.mounted) return;
               Navigator.of(ctx).pop();
               await _refreshOpenRouterStatus();
-              if (!context.mounted) return;
+              if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -105,7 +108,7 @@ class _AiChatPageState extends State<AiChatPage> {
                         ? 'Ключ сохранён на этом устройстве'
                         : 'Не удалось записать ключ — открой настройки приложения и проверь память',
                   ),
-                  backgroundColor: ok ? GlassTheme.gradientTop : Colors.red.shade800,
+                  backgroundColor: ok ? context.fm.gradientHeaderTop : Colors.red.shade800,
                 ),
               );
             },
@@ -174,8 +177,8 @@ class _AiChatPageState extends State<AiChatPage> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: GlassTheme.scaffoldGradient,
+        decoration: BoxDecoration(
+          gradient: context.fm.scaffoldGradient,
         ),
         child: SafeArea(
           bottom: false,
@@ -206,19 +209,23 @@ class _AiChatPageState extends State<AiChatPage> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: GlassTheme.textPrimary),
+            icon: Icon(Icons.arrow_back, color: context.fm.textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [GlassTheme.gradientTop, GlassTheme.gradientBottom],
+              gradient: LinearGradient(
+                colors: [context.fm.gradientHeaderTop, context.fm.gradientHeaderBottom],
               ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.smart_toy, color: Colors.white, size: 24),
+            child: Icon(
+              Icons.smart_toy,
+              color: context.fm.isDark ? Colors.white : context.fm.textPrimary,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -228,7 +235,7 @@ class _AiChatPageState extends State<AiChatPage> {
               children: [
                 Text(
                   'AI Ассистент',
-                  style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                  style: context.fm.titleStyle.copyWith(fontSize: 18),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -240,11 +247,11 @@ class _AiChatPageState extends State<AiChatPage> {
                         : _openRouterConnected!
                             ? 'Онлайн · OpenRouter'
                             : 'Офлайн — нажми сюда или ⋮ → Ключ API',
-                    style: GlassTheme.bodyStyle.copyWith(
+                    style: context.fm.bodyStyle.copyWith(
                       fontSize: 11,
                       color: _openRouterConnected == true
-                          ? GlassTheme.glowCyan
-                          : GlassTheme.glowCyan.withValues(alpha: 0.85),
+                          ? context.fm.glowCyan
+                          : context.fm.glowCyan.withValues(alpha: 0.85),
                       decoration: _openRouterConnected != true
                           ? TextDecoration.underline
                           : TextDecoration.none,
@@ -257,9 +264,9 @@ class _AiChatPageState extends State<AiChatPage> {
             ),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: GlassTheme.textPrimary),
+            icon: Icon(Icons.more_vert, color: context.fm.textPrimary),
             tooltip: 'Меню',
-            color: const Color(0xFF0D1B2A),
+            color: context.fm.dialogBackground,
             onSelected: (value) async {
               if (value == 'key') {
                 await _showOpenRouterKeyDialog();
@@ -268,25 +275,25 @@ class _AiChatPageState extends State<AiChatPage> {
                 await _loadMessages();
               }
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
+            itemBuilder: (menuContext) => [
+              PopupMenuItem(
                 value: 'key',
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.vpn_key_rounded, color: GlassTheme.glowCyan),
-                  title: Text('Ключ API OpenRouter', style: TextStyle(color: Colors.white)),
+                  leading: Icon(Icons.vpn_key_rounded, color: menuContext.fm.glowCyan),
+                  title: Text('Ключ API OpenRouter', style: TextStyle(color: menuContext.fm.textPrimary)),
                   subtitle: Text(
                     'Или в файл openrouter_user_key.dart — openrouter.ai/keys',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(color: menuContext.fm.textSecondary, fontSize: 12),
                   ),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'clear',
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.delete_outline, color: Colors.white70),
-                  title: Text('Очистить чат', style: TextStyle(color: Colors.white)),
+                  leading: Icon(Icons.delete_outline, color: menuContext.fm.textSecondary),
+                  title: Text('Очистить чат', style: TextStyle(color: menuContext.fm.textPrimary)),
                 ),
               ),
             ],
@@ -306,43 +313,43 @@ class _AiChatPageState extends State<AiChatPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [GlassTheme.gradientTop, GlassTheme.gradientBottom],
+                gradient: LinearGradient(
+                  colors: [context.fm.gradientHeaderTop, context.fm.gradientHeaderBottom],
                 ),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(Icons.smart_toy, color: Colors.white, size: 64),
+              child: Icon(Icons.smart_toy, color: context.fm.textPrimary, size: 64),
             ),
             const SizedBox(height: 24),
             Text(
               'Привет! Я ваш AI тренер',
-              style: GlassTheme.titleStyle.copyWith(fontSize: 24),
+              style: context.fm.titleStyle.copyWith(fontSize: 24),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               'Задайте вопрос о тренировках, питании или мотивации',
-              style: GlassTheme.bodyStyle,
+              style: context.fm.bodyStyle,
               textAlign: TextAlign.center,
             ),
             if (_openRouterConnected != true) ...[
               const SizedBox(height: 20),
               OutlinedButton.icon(
                 onPressed: _showOpenRouterKeyDialog,
-                icon: const Icon(Icons.vpn_key_rounded, color: GlassTheme.glowCyan),
-                label: const Text(
+                icon: Icon(Icons.vpn_key_rounded, color: context.fm.glowCyan),
+                label: Text(
                   'Ввести ключ OpenRouter',
-                  style: TextStyle(color: GlassTheme.textPrimary),
+                  style: TextStyle(color: context.fm.textPrimary),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: GlassTheme.glowCyan),
+                  side: BorderSide(color: context.fm.glowCyan),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Без ключа ответы только офлайн. Ключ — в меню ⋮ справа вверху.',
-                style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
+                style: context.fm.bodyStyle.copyWith(fontSize: 11),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -379,7 +386,7 @@ class _AiChatPageState extends State<AiChatPage> {
         ),
         child: Text(
           question,
-          style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+          style: context.fm.bodyStyle.copyWith(fontSize: 12),
         ),
       ),
     );
@@ -409,8 +416,8 @@ class _AiChatPageState extends State<AiChatPage> {
         ),
         decoration: BoxDecoration(
           gradient: message.isUser
-              ? const LinearGradient(
-                  colors: [GlassTheme.gradientTop, GlassTheme.gradientBottom],
+              ? LinearGradient(
+                  colors: [context.fm.gradientHeaderTop, context.fm.gradientHeaderBottom],
                 )
               : null,
           color: message.isUser ? null : Colors.white.withValues(alpha: 0.1),
@@ -428,7 +435,7 @@ class _AiChatPageState extends State<AiChatPage> {
             SelectableText(
               message.content,
               style: TextStyle(
-                color: message.isUser ? Colors.white : GlassTheme.textPrimary,
+                color: message.isUser ? Colors.white : context.fm.textPrimary,
                 fontSize: 14,
               ),
             ),
@@ -464,13 +471,13 @@ class _AiChatPageState extends State<AiChatPage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: GlassTheme.glowCyan),
+          Icon(icon, size: 16, color: context.fm.glowCyan),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              color: GlassTheme.glowCyan,
+              color: context.fm.glowCyan,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -493,10 +500,10 @@ class _AiChatPageState extends State<AiChatPage> {
           Expanded(
             child: TextField(
               controller: _controller,
-              style: const TextStyle(color: GlassTheme.textPrimary),
+              style: TextStyle(color: context.fm.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Задайте вопрос...',
-                hintStyle: TextStyle(color: GlassTheme.textSecondary),
+                hintStyle: TextStyle(color: context.fm.textSecondary),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.1),
                 border: OutlineInputBorder(
@@ -515,8 +522,8 @@ class _AiChatPageState extends State<AiChatPage> {
           const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [GlassTheme.gradientTop, GlassTheme.gradientBottom],
+              gradient: LinearGradient(
+                colors: [context.fm.gradientHeaderTop, context.fm.gradientHeaderBottom],
               ),
               borderRadius: BorderRadius.circular(24),
             ),

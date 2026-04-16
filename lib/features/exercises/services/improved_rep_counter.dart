@@ -7,6 +7,14 @@ class ImprovedRepCounter {
   int _repCount = 0;
   bool _isInDownPosition = false;
   DateTime? _lastRepTime;
+
+  /// Окно одного повтора: нижняя точка с минимальной фиксацией, сброс при затягивании.
+  DateTime? _repWindowStart;
+  DateTime? _bottomStart;
+  bool _bottomHoldSatisfied = false;
+  /// После удержания внизу вышли в «не глубоко» — следующий вход вниз без «вверх» = новый цикл.
+  bool _surfacedAfterDeep = false;
+  double _lastMovementQuality = 0;
   
   // Для статических упражнений - отслеживание времени
   DateTime? _staticStartTime;
@@ -14,9 +22,16 @@ class ImprovedRepCounter {
   bool _isInCorrectStaticPosition = false;
   
   // Оптимизированные настройки для FPS
-  static const int _minTimeBetweenReps = 400;
-  static const double _minConfidence = 0.35;
+  static const int _minTimeBetweenReps = 520;
+  static const double _minConfidence = 0.38;
   static const int _skipFrames = 1; // Анализируем каждый кадр для быстрой реакции
+
+  /// Минимум в «глубокой» фазе (мс), иначе повтор не считается.
+  static const int _minBottomHoldMs = 220;
+  /// Слишком долго внизу без выхода — цикл с нуля.
+  static const int _maxStallInBottomMs = 4200;
+  /// Весь цикл «вниз → задержка → вверх» не дольше (мс).
+  static const int _maxRepCycleMs = 8500;
   
   // Кэш для вычислений
   final Map<String, double> _angleCache = {};
@@ -364,6 +379,7 @@ class ImprovedRepCounter {
       _currentExerciseType = exerciseId;
       _clearCaches();
       _resetStaticTimer();
+      _resetDynamicRepProgress();
     }
   }
   
@@ -372,9 +388,34 @@ class ImprovedRepCounter {
     _repCount = 0;
     _isInDownPosition = false;
     _lastRepTime = null;
+    _repWindowStart = null;
+    _bottomStart = null;
+    _bottomHoldSatisfied = false;
+    _surfacedAfterDeep = false;
+    _lastMovementQuality = 0;
     _clearCaches();
     _frameCounter = 0;
     _resetStaticTimer();
+  }
+
+  void _resetDynamicRepProgress() {
+    _isInDownPosition = false;
+    _repWindowStart = null;
+    _bottomStart = null;
+    _bottomHoldSatisfied = false;
+    _surfacedAfterDeep = false;
+  }
+
+  static bool isRhythmOrDanceExercise(String id) {
+    const ids = {
+      'jumping_jacks',
+      'jump_rope',
+      'jump_in_place',
+      'high_knees',
+      'running_in_place',
+      'mountain_climbers',
+    };
+    return ids.contains(id);
   }
   
   /// Сбрасывает таймер статических упражнений
@@ -407,6 +448,7 @@ class ImprovedRepCounter {
         isInDownPosition: _isInDownPosition,
         feedback: 'Анализ...',
         confidence: 0.5,
+        movementQuality: _lastMovementQuality,
       );
     }
     
@@ -425,6 +467,7 @@ class ImprovedRepCounter {
         isInDownPosition: _isInDownPosition,
         feedback: 'Пауза между повторениями...',
         confidence: 0.3,
+        movementQuality: _lastMovementQuality,
       );
     }
     
@@ -442,6 +485,7 @@ class ImprovedRepCounter {
         isInDownPosition: _isInDownPosition,
         feedback: criticalResult.feedback,
         confidence: 0.0,
+        movementQuality: 0,
       );
     }
     
@@ -463,6 +507,7 @@ class ImprovedRepCounter {
         isInDownPosition: _isInDownPosition,
         feedback: 'Встаньте в кадр полностью',
         confidence: 0.0,
+        movementQuality: 0,
       );
     }
     
@@ -486,6 +531,7 @@ class ImprovedRepCounter {
         isInDownPosition: _isInDownPosition,
         feedback: 'Улучшите позицию',
         confidence: boostedConfidence,
+        movementQuality: _lastMovementQuality,
       );
     }
     
@@ -548,41 +594,114 @@ class ImprovedRepCounter {
       feedback: feedback,
       confidence: confidence,
       currentAngle: smoothedAngle,
+      movementQuality: movementScore.clamp(0, 2),
     );
   }
   
   /// Анализ динамических упражнений (приседания, отжимания и т.д.)
-  RepCountResult _analyzeDynamicExercise(OptimizedExerciseConfig config, double smoothedAngle, 
-                                        double confidence, double movementScore) {
-    // Определение позиции с мягкими порогами
-    final isDown = smoothedAngle < config.primaryDownAngle && movementScore > 0.4;
-    final isUp = smoothedAngle > config.primaryUpAngle && movementScore > 0.4;
-    
+  RepCountResult _analyzeDynamicExercise(OptimizedExerciseConfig config, double smoothedAngle,
+      double confidence, double movementScore) {
+    _lastMovementQuality = movementScore.clamp(0, 2);
+
+    final movOkDown = movementScore > 0.48;
+    final movOkUp = movementScore > 0.52;
+    final isDown = smoothedAngle < config.primaryDownAngle && movOkDown;
+    final isUp = smoothedAngle > config.primaryUpAngle && movOkUp;
+
+    final now = DateTime.now();
     String feedback = 'Продолжайте!';
-    
-    // Умный подсчет повторений
-    if (_isInDownPosition && isUp && movementScore > 0.6) {
-      _repCount++;
-      _lastRepTime = DateTime.now();
-      _isInDownPosition = false;
-      feedback = _getMotivationalFeedback(_repCount);
-    } else if (isDown && !_isInDownPosition && movementScore > 0.5) {
-      _isInDownPosition = true;
-      feedback = 'Отлично! Теперь вверх! 💪';
-    } else if (_isInDownPosition && !isUp) {
-      feedback = _getPositionalFeedback(config.primaryJoint, true);
-    } else if (!isDown && !_isInDownPosition) {
-      feedback = _getPositionalFeedback(config.primaryJoint, false);
-    } else if (movementScore < 0.4) {
-      feedback = 'Выполняйте упражнение активнее!';
+
+    // Таймаут всего цикла повтора
+    if (_repWindowStart != null &&
+        now.difference(_repWindowStart!).inMilliseconds > _maxRepCycleMs) {
+      _resetDynamicRepProgress();
+      feedback = 'Слишком долго — начни цикл заново (верх → глубина → верх).';
+      return RepCountResult(
+        repCount: _repCount,
+        isInDownPosition: false,
+        feedback: feedback,
+        confidence: confidence,
+        currentAngle: smoothedAngle,
+        movementQuality: _lastMovementQuality,
+      );
     }
-    
+
+    if (isDown && movOkDown) {
+      if (_bottomHoldSatisfied && _surfacedAfterDeep) {
+        _resetDynamicRepProgress();
+        feedback = 'Сначала полностью вверх — цикл начинается заново.';
+        return RepCountResult(
+          repCount: _repCount,
+          isInDownPosition: false,
+          feedback: feedback,
+          confidence: confidence,
+          currentAngle: smoothedAngle,
+          movementQuality: _lastMovementQuality,
+        );
+      }
+      _repWindowStart ??= now;
+      _bottomStart ??= now;
+      _isInDownPosition = true;
+
+      final inBottomMs = now.difference(_bottomStart!).inMilliseconds;
+      if (inBottomMs > _maxStallInBottomMs) {
+        _resetDynamicRepProgress();
+        feedback = 'Долго в нижней точке — новый цикл с исходного положения.';
+        return RepCountResult(
+          repCount: _repCount,
+          isInDownPosition: false,
+          feedback: feedback,
+          confidence: confidence,
+          currentAngle: smoothedAngle,
+          movementQuality: _lastMovementQuality,
+        );
+      }
+      if (inBottomMs >= _minBottomHoldMs) {
+        _bottomHoldSatisfied = true;
+      }
+      feedback = _bottomHoldSatisfied
+          ? 'Хорошо, выходи вверх до конца! 💪'
+          : 'Задержись в нижней точке…';
+    } else {
+      // выход из «вниз»
+      if (_bottomStart != null && !_bottomHoldSatisfied) {
+        _resetDynamicRepProgress();
+        feedback = 'Слишком рано вышел из нижней точки — повтор с начала.';
+        return RepCountResult(
+          repCount: _repCount,
+          isInDownPosition: false,
+          feedback: feedback,
+          confidence: confidence,
+          currentAngle: smoothedAngle,
+          movementQuality: _lastMovementQuality,
+        );
+      }
+
+      if (_bottomHoldSatisfied && smoothedAngle >= config.primaryDownAngle) {
+        _surfacedAfterDeep = true;
+      }
+
+      if (_bottomHoldSatisfied && isUp && movementScore > 0.58) {
+        _repCount++;
+        _lastRepTime = now;
+        _resetDynamicRepProgress();
+        feedback = _getMotivationalFeedback(_repCount);
+      } else if (_bottomHoldSatisfied && !isUp) {
+        feedback = _getPositionalFeedback(config.primaryJoint, true);
+      } else if (!isDown && !_isInDownPosition) {
+        feedback = _getPositionalFeedback(config.primaryJoint, false);
+      } else if (movementScore < 0.42) {
+        feedback = 'Выполняйте упражнение активнее и ровнее!';
+      }
+    }
+
     return RepCountResult(
       repCount: _repCount,
       isInDownPosition: _isInDownPosition,
       feedback: feedback,
       confidence: confidence,
       currentAngle: smoothedAngle,
+      movementQuality: _lastMovementQuality,
     );
   }
   /// Обратная связь для статических упражнений
@@ -1038,6 +1157,7 @@ class ImprovedRepCounter {
         isInDownPosition: _isInDownPosition,
         feedback: 'Встаньте в кадр',
         confidence: 0.0,
+        movementQuality: 0,
       );
     }
     
@@ -1056,6 +1176,7 @@ class ImprovedRepCounter {
         isInDownPosition: false,
         feedback: 'Повторение $_repCount! 💪',
         confidence: 0.7,
+        movementQuality: 0.5,
       );
     } else if (isDown && !_isInDownPosition) {
       _isInDownPosition = true;
@@ -1066,6 +1187,7 @@ class ImprovedRepCounter {
       isInDownPosition: _isInDownPosition,
       feedback: 'Продолжайте!',
       confidence: 0.6,
+      movementQuality: 0.4,
     );
   }
 }
@@ -1139,12 +1261,15 @@ class RepCountResult {
   final String feedback;
   final double confidence;
   final double? currentAngle;
-  
+  /// Нормированная амплитуда движения по ключевым точкам (0–2), для оценки техники в UI.
+  final double movementQuality;
+
   const RepCountResult({
     required this.repCount,
     required this.isInDownPosition,
     required this.feedback,
     required this.confidence,
     this.currentAngle,
+    this.movementQuality = 0,
   });
 }

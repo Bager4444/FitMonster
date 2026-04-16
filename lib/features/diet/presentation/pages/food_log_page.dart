@@ -57,7 +57,7 @@ class _FoodLogPageState extends State<FoodLogPage> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context).colorScheme.copyWith(
-            primary: GlassTheme.gradientTop,
+            primary: context.fm.gradientHeaderTop,
             onPrimary: Colors.white,
           ),
           textButtonTheme: TextButtonThemeData(
@@ -66,33 +66,33 @@ class _FoodLogPageState extends State<FoodLogPage> {
           inputDecorationTheme: InputDecorationThemeData(
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: GlassTheme.gradientTop),
+              borderSide: BorderSide(color: context.fm.gradientHeaderTop),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: GlassTheme.gradientTop, width: 2),
+              borderSide: BorderSide(color: context.fm.gradientHeaderTop, width: 2),
             ),
-            labelStyle: const TextStyle(color: GlassTheme.gradientTop),
-            floatingLabelStyle: const TextStyle(color: GlassTheme.gradientTop),
-            hintStyle: const TextStyle(color: GlassTheme.gradientTop),
+            labelStyle: TextStyle(color: context.fm.gradientHeaderTop),
+            floatingLabelStyle: TextStyle(color: context.fm.gradientHeaderTop),
+            hintStyle: TextStyle(color: context.fm.gradientHeaderTop),
           ),
           dialogTheme: DialogThemeData(
             shape: RoundedRectangleBorder(
-              side: const BorderSide(color: GlassTheme.gradientTop, width: 2),
+              side: BorderSide(color: context.fm.gradientHeaderTop, width: 2),
               borderRadius: BorderRadius.circular(16),
             ),
-            titleTextStyle: GlassTheme.titleStyle.copyWith(
-              color: GlassTheme.gradientTop,
+            titleTextStyle: context.fm.titleStyle.copyWith(
+              color: context.fm.gradientHeaderTop,
               fontSize: 20,
             ),
           ),
           datePickerTheme: DatePickerThemeData(
-            headerHeadlineStyle: GlassTheme.titleStyle.copyWith(
-              color: GlassTheme.gradientTop,
+            headerHeadlineStyle: context.fm.titleStyle.copyWith(
+              color: context.fm.gradientHeaderTop,
               fontSize: 24,
             ),
-            headerHelpStyle: GlassTheme.bodyStyle.copyWith(
-              color: GlassTheme.gradientTop,
+            headerHelpStyle: context.fm.bodyStyle.copyWith(
+              color: context.fm.gradientHeaderTop,
             ),
           ),
         ),
@@ -131,20 +131,20 @@ class _FoodLogPageState extends State<FoodLogPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.chevron_left, color: GlassTheme.textPrimary),
+              icon: Icon(Icons.chevron_left, color: context.fm.textPrimary),
               onPressed: () => _navigateDate(-1),
               tooltip: 'Предыдущий день',
             ),
             Text(
               _formatDate(_selectedDate),
-              style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+              style: context.fm.titleStyle.copyWith(fontSize: 18),
             ),
             IconButton(
               icon: Icon(
                 Icons.chevron_right,
                 color: _selectedDate.isBefore(DateTime.now().add(const Duration(days: 364)))
-                    ? GlassTheme.textPrimary
-                    : GlassTheme.textSecondary,
+                    ? context.fm.textPrimary
+                    : context.fm.textSecondary,
               ),
               onPressed: _selectedDate.isBefore(DateTime.now().add(const Duration(days: 364)))
                   ? () => _navigateDate(1)
@@ -155,16 +155,16 @@ class _FoodLogPageState extends State<FoodLogPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today, color: GlassTheme.textPrimary),
+            icon: Icon(Icons.calendar_today, color: context.fm.textPrimary),
             tooltip: 'Выбрать дату',
             onPressed: () => _selectDate(),
           ),
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(gradient: GlassTheme.scaffoldGradient),
+        decoration: BoxDecoration(gradient: context.fm.scaffoldGradient),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: GlassTheme.glowCyan))
+            ? Center(child: CircularProgressIndicator(color: context.fm.glowCyan))
             : _buildMealsList(),
       ),
     );
@@ -264,15 +264,15 @@ class _FoodLogPageState extends State<FoodLogPage> {
                 leading: Text(mealType.emoji, style: const TextStyle(fontSize: 28)),
                 title: Text(
                   mealType.nameRu,
-                  style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                  style: context.fm.titleStyle.copyWith(fontSize: 16),
                 ),
-                subtitle: Text('$mealCalories ккал', style: GlassTheme.bodyStyle.copyWith(fontSize: 13)),
+                subtitle: Text('$mealCalories ккал', style: context.fm.bodyStyle.copyWith(fontSize: 13)),
                 trailing: IconButton(
-                  icon: const Icon(Icons.add, color: GlassTheme.glowCyan),
+                  icon: Icon(Icons.add, color: context.fm.glowCyan),
                   onPressed: () => _showAddFoodDialog(mealType: mealType),
                 ),
-                iconColor: GlassTheme.textPrimary,
-                collapsedIconColor: GlassTheme.textSecondary,
+                iconColor: context.fm.textPrimary,
+                collapsedIconColor: context.fm.textSecondary,
                 children: mealLogs.map((log) => _buildFoodLogTile(log)).toList(),
               ),
             ),
@@ -285,13 +285,13 @@ class _FoodLogPageState extends State<FoodLogPage> {
   Widget _buildFoodLogTile(FoodLog log) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: GlassTheme.glowCyan.withOpacity(0.3),
-        child: const Icon(Icons.restaurant, color: GlassTheme.glowCyan, size: 20),
+        backgroundColor: context.fm.glowCyan.withOpacity(0.3),
+        child: Icon(Icons.restaurant, color: context.fm.glowCyan, size: 20),
       ),
-      title: Text(log.foodName, style: GlassTheme.titleStyle.copyWith(fontSize: 14)),
+      title: Text(log.foodName, style: context.fm.titleStyle.copyWith(fontSize: 14)),
       subtitle: Text(
         '${log.grams.toStringAsFixed(0)}г • ${log.calories} ккал',
-        style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+        style: context.fm.bodyStyle.copyWith(fontSize: 12),
       ),
       trailing: PopupMenuButton(
         itemBuilder: (context) => [

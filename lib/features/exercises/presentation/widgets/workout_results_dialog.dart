@@ -43,7 +43,7 @@ class WorkoutResultsDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: GlassTheme.gradientTop,
+                color: context.fm.gradientHeaderTop,
                 borderRadius: BorderRadius.circular(50),
               ),
               child: const Icon(
@@ -55,12 +55,12 @@ class WorkoutResultsDialog extends StatelessWidget {
             
             const SizedBox(height: 16),
             
-            const Text(
+            Text(
               'Тренировка завершена!',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: GlassTheme.gradientTop,
+                color: context.fm.gradientHeaderTop,
               ),
               textAlign: TextAlign.center,
             ),
@@ -164,7 +164,7 @@ class WorkoutResultsDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: GlassTheme.gradientTop,
+                      backgroundColor: context.fm.gradientHeaderTop,
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(

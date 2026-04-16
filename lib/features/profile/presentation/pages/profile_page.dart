@@ -232,11 +232,11 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Профиль', style: GlassTheme.titleStyle.copyWith(fontSize: 28)),
+          Text('Профиль', style: context.fm.titleStyle.copyWith(fontSize: 28)),
           const SizedBox(height: 8),
           Text(
             'Недельная активность и статистика',
-            style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
+            style: context.fm.bodyStyle.copyWith(fontSize: 14),
           ),
           const SizedBox(height: 24),
           _buildProfileHeader(context, displayName, isLoggedIn),
@@ -268,10 +268,10 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           CircleAvatar(
             radius: 36,
-            backgroundColor: GlassTheme.glowCyan.withOpacity(0.3),
+            backgroundColor: context.fm.glowCyan.withOpacity(0.3),
             child: Text(
               displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-              style: GlassTheme.titleStyle.copyWith(fontSize: 28),
+              style: context.fm.titleStyle.copyWith(fontSize: 28),
             ),
           ),
           const SizedBox(width: 16),
@@ -281,24 +281,24 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 Text(
                   displayName,
-                  style: GlassTheme.titleStyle.copyWith(fontSize: 20),
+                  style: context.fm.titleStyle.copyWith(fontSize: 20),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   isLoggedIn
                       ? 'Вы вошли в аккаунт'
                       : 'Войдите или зарегистрируйтесь',
-                  style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
+                  style: context.fm.bodyStyle.copyWith(fontSize: 13),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Нажмите, чтобы изменить никнейм',
-                  style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
+                  style: context.fm.bodyStyle.copyWith(fontSize: 11),
                 ),
               ],
             ),
           ),
-          Icon(Icons.edit, color: GlassTheme.textSecondary, size: 20),
+          Icon(Icons.edit, color: context.fm.textSecondary, size: 20),
         ],
       ),
     );
@@ -312,11 +312,11 @@ class _ProfilePageState extends State<ProfilePage> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1B2A),
+        backgroundColor: context.fm.dialogBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Никнейм',
-          style: GlassTheme.titleStyle.copyWith(fontSize: 20),
+          style: context.fm.titleStyle.copyWith(fontSize: 20),
         ),
         content: TextField(
           controller: controller,
@@ -340,13 +340,13 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Отмена',
-              style: TextStyle(color: GlassTheme.textSecondary),
+              style: TextStyle(color: context.fm.textSecondary),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
             style: FilledButton.styleFrom(
-              backgroundColor: GlassTheme.gradientTop,
+              backgroundColor: context.fm.gradientHeaderTop,
             ),
             child: const Text('Сохранить'),
           ),
@@ -386,7 +386,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Неделя', style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
+          Text('Неделя', style: context.fm.titleStyle.copyWith(fontSize: 18)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -398,7 +398,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   Text(
                     _dayLabels[i],
-                    style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                    style: context.fm.bodyStyle.copyWith(fontSize: 12),
                   ),
                   const SizedBox(height: 8),
                   active
@@ -407,7 +407,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           backgroundColor: Colors.cyanAccent,
                           child: Icon(
                             Icons.check,
-                            color: GlassTheme.gradientBottom,
+                            color: context.fm.gradientHeaderBottom,
                             size: 22,
                           ),
                         )
@@ -470,15 +470,15 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(item.icon, color: GlassTheme.glowCyan, size: 28),
+          Icon(item.icon, color: context.fm.glowCyan, size: 28),
           const SizedBox(height: 8),
           Text(
             item.label,
-            style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+            style: context.fm.bodyStyle.copyWith(fontSize: 12),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
-          Text(item.value, style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
+          Text(item.value, style: context.fm.titleStyle.copyWith(fontSize: 18)),
         ],
       ),
     );
@@ -491,12 +491,12 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Row(
             children: [
-              Icon(Icons.leaderboard, color: GlassTheme.glowCyan, size: 22),
+              Icon(Icons.leaderboard, color: context.fm.glowCyan, size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Рейтинг',
-                  style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                  style: context.fm.titleStyle.copyWith(fontSize: 18),
                 ),
               ),
               IconButton(
@@ -507,14 +507,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         height: 22,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Icon(Icons.refresh, color: GlassTheme.textSecondary),
+                    : Icon(Icons.refresh, color: context.fm.textSecondary),
                 tooltip: 'Обновить позиции',
               ),
             ],
           ),
           Text(
             'Локально: все аккаунты на этом устройстве. Балл = упражнения, время, техника, ачивки.',
-            style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
+            style: context.fm.bodyStyle.copyWith(fontSize: 11),
           ),
           if (_myRank != null || _leaderboardTotal > 0) ...[
             const SizedBox(height: 10),
@@ -523,7 +523,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? 'Ваше место: $_myRank из $_leaderboardTotal · балл $_myRatingScore'
                   : 'Игроков в таблице: $_leaderboardTotal',
               style: TextStyle(
-                color: GlassTheme.glowCyan,
+                color: context.fm.glowCyan,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -533,7 +533,7 @@ class _ProfilePageState extends State<ProfilePage> {
           if (_leaderboardTop.isEmpty)
             Text(
               'Пока нет данных для рейтинга',
-              style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
+              style: context.fm.bodyStyle.copyWith(fontSize: 13),
             )
           else
             ...List.generate(_leaderboardTop.length, (index) {
@@ -550,12 +550,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   decoration: BoxDecoration(
                     color: isMe
-                        ? GlassTheme.glowCyan.withOpacity(0.12)
+                        ? context.fm.glowCyan.withOpacity(0.12)
                         : Colors.white.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isMe
-                          ? GlassTheme.glowCyan.withOpacity(0.5)
+                          ? context.fm.glowCyan.withOpacity(0.5)
                           : Colors.white.withOpacity(0.15),
                     ),
                   ),
@@ -575,7 +575,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             Text(
                               _leaderboardDisplayName(u),
-                              style: GlassTheme.titleStyle.copyWith(fontSize: 14),
+                              style: context.fm.titleStyle.copyWith(fontSize: 14),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -583,7 +583,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               Text(
                                 'Вы',
                                 style: TextStyle(
-                                  color: GlassTheme.glowCyan,
+                                  color: context.fm.glowCyan,
                                   fontSize: 11,
                                 ),
                               ),
@@ -592,7 +592,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       Text(
                         '$score',
-                        style: GlassTheme.titleStyle.copyWith(fontSize: 15),
+                        style: context.fm.titleStyle.copyWith(fontSize: 15),
                       ),
                     ],
                   ),
@@ -611,11 +611,11 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Row(
             children: [
-              Icon(Icons.local_offer, color: GlassTheme.glowCyan, size: 22),
+              Icon(Icons.local_offer, color: context.fm.glowCyan, size: 22),
               const SizedBox(width: 8),
               Text(
                 'Промокод',
-                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                style: context.fm.titleStyle.copyWith(fontSize: 18),
               ),
             ],
           ),
@@ -626,12 +626,12 @@ class _ProfilePageState extends State<ProfilePage> {
               Expanded(
                 child: TextField(
                   controller: _promoController,
-                  style: const TextStyle(color: GlassTheme.textPrimary),
+                  style: TextStyle(color: context.fm.textPrimary),
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
                     hintText: 'Введите код',
                     hintStyle: TextStyle(
-                      color: GlassTheme.textSecondary.withOpacity(0.8),
+                      color: context.fm.textSecondary.withOpacity(0.8),
                     ),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.08),
@@ -649,7 +649,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: GlassTheme.glowCyan),
+                      borderSide: BorderSide(color: context.fm.glowCyan),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -665,7 +665,7 @@ class _ProfilePageState extends State<ProfilePage> {
               FilledButton(
                 onPressed: _promoLoading ? null : _applyPromoCode,
                 style: FilledButton.styleFrom(
-                  backgroundColor: GlassTheme.gradientTop,
+                  backgroundColor: context.fm.gradientHeaderTop,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 18,
                     vertical: 16,
@@ -702,11 +702,11 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Row(
             children: [
-              Icon(Icons.emoji_events, color: GlassTheme.glowCyan, size: 22),
+              Icon(Icons.emoji_events, color: context.fm.glowCyan, size: 22),
               const SizedBox(width: 8),
               Text(
                 'Достижения',
-                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                style: context.fm.titleStyle.copyWith(fontSize: 18),
               ),
             ],
           ),
@@ -732,17 +732,17 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 Text(
                   a.title,
-                  style: GlassTheme.titleStyle.copyWith(
+                  style: context.fm.titleStyle.copyWith(
                     fontSize: 15,
                     color: unlocked
-                        ? GlassTheme.textPrimary
-                        : GlassTheme.textSecondary,
+                        ? context.fm.textPrimary
+                        : context.fm.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   a.description,
-                  style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                  style: context.fm.bodyStyle.copyWith(fontSize: 12),
                 ),
                 if (unlocked)
                   Padding(
@@ -750,7 +750,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Text(
                       'Получено',
                       style: TextStyle(
-                        color: GlassTheme.glowCyan,
+                        color: context.fm.glowCyan,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -761,7 +761,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           Icon(
             unlocked ? Icons.check_circle : Icons.lock_outline,
-            color: unlocked ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+            color: unlocked ? context.fm.glowCyan : context.fm.textSecondary,
             size: 22,
           ),
         ],
@@ -818,15 +818,15 @@ class _ProfilePageState extends State<ProfilePage> {
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, color: GlassTheme.textPrimary, size: 22),
+          Icon(icon, color: context.fm.textPrimary, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+              style: context.fm.titleStyle.copyWith(fontSize: 16),
             ),
           ),
-          Icon(Icons.chevron_right, color: GlassTheme.textSecondary, size: 22),
+          Icon(Icons.chevron_right, color: context.fm.textSecondary, size: 22),
         ],
       ),
     );

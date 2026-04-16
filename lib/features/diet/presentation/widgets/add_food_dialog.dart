@@ -295,7 +295,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       child: Container(
         constraints: const BoxConstraints(maxHeight: 600),
         decoration: BoxDecoration(
-          gradient: GlassTheme.scaffoldGradient,
+          gradient: context.fm.scaffoldGradient,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white.withOpacity(0.2)),
         ),
@@ -321,11 +321,11 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                   Expanded(
                     child: Text(
                       'Добавить в ${widget.mealType.nameRu.toLowerCase()}',
-                      style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                      style: context.fm.titleStyle.copyWith(fontSize: 18),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: GlassTheme.textPrimary),
+                    icon: Icon(Icons.close, color: context.fm.textPrimary),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -341,16 +341,16 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: GlassTheme.glowCyan.withOpacity(0.4)),
+                  border: Border.all(color: context.fm.glowCyan.withOpacity(0.4)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.wifi_off, size: 16, color: GlassTheme.glowCyan),
+                    Icon(Icons.wifi_off, size: 16, color: context.fm.glowCyan),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Офлайн-режим. Показаны только сохранённые продукты.',
-                        style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                        style: context.fm.bodyStyle.copyWith(fontSize: 12),
                       ),
                     ),
                   ],
@@ -365,7 +365,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                 children: [
                   Text(
                     'Поиск продукта',
-                    style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                    style: context.fm.titleStyle.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -377,23 +377,26 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                     textCapitalization: TextCapitalization.none,
                     enableSuggestions: true,
                     autocorrect: false,
-                    style: const TextStyle(fontSize: 16, color: GlassTheme.textPrimary),
+                    style: TextStyle(fontSize: 16, color: context.fm.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Начните вводить название',
-                      hintStyle: GlassTheme.bodyStyle,
-                      prefixIcon: const Icon(Icons.search, color: GlassTheme.glowCyan),
+                      hintStyle: context.fm.bodyStyle,
+                      prefixIcon: Icon(Icons.search, color: context.fm.glowCyan),
                       suffixIcon: _isLoading
-                          ? const Padding(
-                              padding: EdgeInsets.all(12.0),
+                          ? Padding(
+                              padding: const EdgeInsets.all(12.0),
                               child: SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: GlassTheme.glowCyan),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: context.fm.glowCyan,
+                                ),
                               ),
                             )
                           : _searchController.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear, color: GlassTheme.textPrimary),
+                                  icon: Icon(Icons.clear, color: context.fm.textPrimary),
                                   onPressed: () {
                                     _searchController.clear();
                                     _search('');
@@ -412,7 +415,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: GlassTheme.glowCyan, width: 2),
+                        borderSide: BorderSide(color: context.fm.glowCyan, width: 2),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -435,7 +438,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
             // Список продуктов
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: GlassTheme.glowCyan))
+                  ? Center(child: CircularProgressIndicator(color: context.fm.glowCyan))
                   : _buildFoodList(),
             ),
 
@@ -458,11 +461,11 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                         Expanded(
                           child: Text(
                             'Выбрано: ${_selectedFood!.nameRu}',
-                            style: GlassTheme.titleStyle.copyWith(fontSize: 14),
+                            style: context.fm.titleStyle.copyWith(fontSize: 14),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.info_outline, color: GlassTheme.glowCyan),
+                          icon: Icon(Icons.info_outline, color: context.fm.glowCyan),
                           onPressed: _openFoodDetails,
                           tooltip: 'Детали продукта',
                         ),
@@ -474,18 +477,18 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                         padding: const EdgeInsets.all(8),
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: GlassTheme.glowCyan.withOpacity(0.15),
+                          color: context.fm.glowCyan.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: GlassTheme.glowCyan.withOpacity(0.4)),
+                          border: Border.all(color: context.fm.glowCyan.withOpacity(0.4)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.warning, size: 20, color: GlassTheme.glowCyan),
+                            Icon(Icons.warning, size: 20, color: context.fm.glowCyan),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Содержит: ${_selectedFood!.allergens.join(", ")}',
-                                style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                                style: context.fm.bodyStyle.copyWith(fontSize: 12),
                               ),
                             ),
                           ],
@@ -496,7 +499,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                     if (_selectedFood!.servings.isNotEmpty) ...[
                       Text(
                         'Выберите порцию:',
-                        style: GlassTheme.bodyStyle.copyWith(
+                        style: context.fm.bodyStyle.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
@@ -510,14 +513,14 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                           return ChoiceChip(
                             label: Text(
                               '${serving.nameRu} (${serving.grams.round()}г)',
-                              style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                              style: context.fm.bodyStyle.copyWith(fontSize: 12),
                             ),
                             selected: isSelected,
                             onSelected: (selected) {
                               if (selected) _selectServing(serving);
                             },
-                            selectedColor: GlassTheme.glowCyan.withOpacity(0.3),
-                            checkmarkColor: GlassTheme.textPrimary,
+                            selectedColor: context.fm.glowCyan.withOpacity(0.3),
+                            checkmarkColor: context.fm.textPrimary,
                             side: BorderSide(color: Colors.white.withOpacity(0.3)),
                           );
                         }).toList(),
@@ -531,7 +534,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                             controller: _gramsController,
                             label: 'Вес (граммы)',
                             keyboardType: TextInputType.number,
-                            prefixIcon: const Icon(Icons.scale, color: GlassTheme.glowCyan),
+                            prefixIcon: Icon(Icons.scale, color: context.fm.glowCyan),
                             onChanged: (value) {
                               setState(() {
                                 _selectedServing = null;
@@ -545,14 +548,14 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                           children: [
                             Text(
                               _calculateCalories(),
-                              style: GlassTheme.titleStyle.copyWith(
+                              style: context.fm.titleStyle.copyWith(
                                 fontSize: 20,
-                                color: GlassTheme.glowCyan,
+                                color: context.fm.glowCyan,
                               ),
                             ),
                             Text(
                               'калорий',
-                              style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                              style: context.fm.bodyStyle.copyWith(fontSize: 12),
                             ),
                           ],
                         ),
@@ -562,7 +565,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
                     CustomButton(
                       text: 'Добавить',
                       onPressed: _addFood,
-                      backgroundColor: GlassTheme.gradientTop,
+                      backgroundColor: context.fm.gradientHeaderTop,
                       textColor: Colors.white,
                     ),
                   ],
@@ -591,26 +594,26 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.restaurant_menu, size: 64, color: GlassTheme.glowCyan.withOpacity(0.7)),
+                Icon(Icons.restaurant_menu, size: 64, color: context.fm.glowCyan.withOpacity(0.7)),
                 const SizedBox(height: 16),
                 Text(
                   'База данных продуктов пуста',
-                  style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                  style: context.fm.titleStyle.copyWith(fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Идет инициализация базы данных...\nПопробуйте обновить через несколько секунд',
                   textAlign: TextAlign.center,
-                  style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
+                  style: context.fm.bodyStyle.copyWith(fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: _loadInitialData,
-                  icon: const Icon(Icons.refresh, color: GlassTheme.textPrimary),
-                  label: Text('Обновить', style: GlassTheme.titleStyle.copyWith(fontSize: 14)),
+                  icon: Icon(Icons.refresh, color: context.fm.textPrimary),
+                  label: Text('Обновить', style: context.fm.titleStyle.copyWith(fontSize: 14)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: GlassTheme.gradientTop,
+                    backgroundColor: context.fm.gradientHeaderTop,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -647,16 +650,16 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 64, color: GlassTheme.textSecondary),
+            Icon(Icons.search_off, size: 64, color: context.fm.textSecondary),
             const SizedBox(height: 16),
             Text(
               'Ничего не найдено',
-              style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+              style: context.fm.titleStyle.copyWith(fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
               'Попробуйте другой запрос',
-              style: GlassTheme.bodyStyle,
+              style: context.fm.bodyStyle,
             ),
           ],
         ),
@@ -674,9 +677,9 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         title,
-        style: GlassTheme.titleStyle.copyWith(
+        style: context.fm.titleStyle.copyWith(
           fontSize: 14,
-          color: GlassTheme.glowCyan,
+          color: context.fm.glowCyan,
         ),
       ),
     );
@@ -687,27 +690,27 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
     final isFavorite = _favoriteIds.contains(food.id);
     return ListTile(
       selected: isSelected,
-      selectedTileColor: GlassTheme.glowCyan.withOpacity(0.15),
+      selectedTileColor: context.fm.glowCyan.withOpacity(0.15),
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isSelected
-              ? GlassTheme.glowCyan
+              ? context.fm.glowCyan
               : Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? GlassTheme.glowCyan : Colors.white24,
+            color: isSelected ? context.fm.glowCyan : Colors.white24,
           ),
         ),
         child: Icon(
           Icons.restaurant,
-          color: isSelected ? GlassTheme.gradientBottom : GlassTheme.textSecondary,
+          color: isSelected ? context.fm.gradientHeaderBottom : context.fm.textSecondary,
           size: 20,
         ),
       ),
       title: Text(
         food.nameRu,
-        style: GlassTheme.titleStyle.copyWith(fontSize: 15),
+        style: context.fm.titleStyle.copyWith(fontSize: 15),
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Column(
@@ -716,7 +719,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
           if (food.brand != null && food.brand!.isNotEmpty)
             Text(
               food.brand!,
-              style: GlassTheme.bodyStyle.copyWith(
+              style: context.fm.bodyStyle.copyWith(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
               ),
@@ -724,7 +727,7 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
             ),
           Text(
             '${food.calories.round()} ккал • Б: ${food.protein.toStringAsFixed(1)}г Ж: ${food.fat.toStringAsFixed(1)}г У: ${food.carbs.toStringAsFixed(1)}г',
-            style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+            style: context.fm.bodyStyle.copyWith(fontSize: 12),
           ),
         ],
       ),
@@ -735,13 +738,13 @@ class _AddFoodDialogState extends State<AddFoodDialog> {
           IconButton(
             icon: Icon(
               isFavorite ? Icons.star : Icons.star_border,
-              color: isFavorite ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+              color: isFavorite ? context.fm.glowCyan : context.fm.textSecondary,
             ),
             onPressed: () => _toggleFavorite(food),
             tooltip: isFavorite ? 'Удалить из избранного' : 'Добавить в избранное',
           ),
           if (isSelected)
-            const Icon(Icons.check_circle, color: GlassTheme.glowCyan),
+            Icon(Icons.check_circle, color: context.fm.glowCyan),
         ],
       ),
       onTap: () => _selectFood(food),

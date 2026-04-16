@@ -90,7 +90,10 @@ class FitMonsterApp extends StatelessWidget {
           return MaterialApp(
             navigatorKey: appNavigatorKey,
             title: AppConstants.appName,
-            theme: AppTheme.lightTheme,
+            theme: AppTheme.glassLightTheme,
+            darkTheme: AppTheme.glassDarkTheme,
+            themeMode:
+                themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: const HomePage(),
             debugShowCheckedModeBanner: false,
             localizationsDelegates: const [

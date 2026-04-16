@@ -109,7 +109,7 @@ class _ExercisesPageState extends State<ExercisesPage>
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'Все упражнения',
-                style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                style: context.fm.titleStyle.copyWith(fontSize: 18),
               ),
             ),
           ),
@@ -138,12 +138,12 @@ class _ExercisesPageState extends State<ExercisesPage>
           children: [
             Text(
               'Упражнения',
-              style: GlassTheme.titleStyle.copyWith(fontSize: 26),
+              style: context.fm.titleStyle.copyWith(fontSize: 26),
             ),
             const SizedBox(height: 4),
             Text(
               'Выберите упражнение для тренировки',
-              style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
+              style: context.fm.bodyStyle.copyWith(fontSize: 14),
             ),
           ],
         ),
@@ -169,13 +169,12 @@ class _ExercisesPageState extends State<ExercisesPage>
               onTap: () => setState(() => _selectedCategory = category),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               borderRadius: 24,
-              blurSigma: 8,
               child: Text(
                 category,
                 style: TextStyle(
                   color: isSelected
-                      ? GlassTheme.glowCyan
-                      : GlassTheme.textSecondary,
+                      ? context.fm.glowCyan
+                      : context.fm.textSecondary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -199,31 +198,31 @@ class _ExercisesPageState extends State<ExercisesPage>
             if (mounted) setState(() => _searchQueryDebounced = value);
           });
         },
-        style: const TextStyle(color: GlassTheme.textPrimary, fontSize: 15),
+        style: TextStyle(color: context.fm.textPrimary, fontSize: 15),
         decoration: InputDecoration(
           hintText: 'Поиск упражнений...',
-          hintStyle: const TextStyle(
-            color: GlassTheme.textSecondary,
+          hintStyle: TextStyle(
+            color: context.fm.textSecondary,
             fontSize: 15,
           ),
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.search,
-            color: GlassTheme.textSecondary,
+            color: context.fm.textSecondary,
             size: 22,
           ),
           filled: true,
-          fillColor: Colors.transparent,
+          fillColor: context.fm.surfaceCardMuted,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+            borderSide: BorderSide(color: context.fm.outlineMuted),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+            borderSide: BorderSide(color: context.fm.outlineMuted),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: const BorderSide(color: GlassTheme.glowCyan),
+            borderSide: BorderSide(color: context.fm.glowCyan, width: 1.5),
           ),
           contentPadding: const EdgeInsets.symmetric(
             vertical: 14,
@@ -242,7 +241,7 @@ class _ExercisesPageState extends State<ExercisesPage>
         children: [
           Text(
             'Быстрый старт',
-            style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+            style: context.fm.titleStyle.copyWith(fontSize: 18),
           ),
           const SizedBox(height: 12),
           Row(
@@ -254,15 +253,15 @@ class _ExercisesPageState extends State<ExercisesPage>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.casino,
-                        color: GlassTheme.glowCyan,
+                        color: context.fm.glowCyan,
                         size: 32,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Случайное',
-                        style: GlassTheme.titleStyle.copyWith(fontSize: 14),
+                        style: context.fm.titleStyle.copyWith(fontSize: 14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -278,15 +277,15 @@ class _ExercisesPageState extends State<ExercisesPage>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.replay,
-                        color: GlassTheme.glowCyan,
+                        color: context.fm.glowCyan,
                         size: 32,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Последнее',
-                        style: GlassTheme.titleStyle.copyWith(fontSize: 14),
+                        style: context.fm.titleStyle.copyWith(fontSize: 14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -327,7 +326,7 @@ class _ExercisesPageState extends State<ExercisesPage>
     );
   }
 
-  /// Лёгкая карточка без BackdropFilter для плавного скролла сетки
+  /// Карточка сетки: градиентная рамка + непрозрачный фон (как GlassCard, без размытия).
   Widget _buildExerciseCardLight(Exercise exercise) {
     return Material(
       color: Colors.transparent,
@@ -341,16 +340,10 @@ class _ExercisesPageState extends State<ExercisesPage>
           );
         },
         borderRadius: BorderRadius.circular(24),
-        child: Container(
+        child: GlassTheme.framedOpaque(context: context,
+          borderRadius: 24,
+          frameWidth: 2,
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1.5,
-            ),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,8 +354,9 @@ class _ExercisesPageState extends State<ExercisesPage>
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: GlassTheme.glowCyan.withOpacity(0.2),
+                      color: context.fm.surfaceCardMuted,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.fm.outlineMuted),
                     ),
                     child: Center(
                       child: Text(
@@ -379,14 +373,14 @@ class _ExercisesPageState extends State<ExercisesPage>
                       children: [
                         Text(
                           exercise.nameRu,
-                          style: GlassTheme.titleStyle.copyWith(fontSize: 14),
+                          style: context.fm.titleStyle.copyWith(fontSize: 14),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           ExerciseColors.getCategoryForExercise(exercise.id),
-                          style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
+                          style: context.fm.bodyStyle.copyWith(fontSize: 11),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -403,11 +397,12 @@ class _ExercisesPageState extends State<ExercisesPage>
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  color: context.fm.surfaceCardMuted,
+                  border: Border.all(color: context.fm.outlineMuted),
                 ),
                 child: Text(
                   _getDifficultyText(_getDifficultyForExercise(exercise.id)),
-                  style: GlassTheme.bodyStyle.copyWith(fontSize: 11),
+                  style: context.fm.bodyStyle.copyWith(fontSize: 11),
                 ),
               ),
               const Spacer(),
@@ -423,15 +418,15 @@ class _ExercisesPageState extends State<ExercisesPage>
                       ),
                     );
                   },
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.play_arrow_rounded,
-                    color: GlassTheme.glowCyan,
+                    color: context.fm.glowCyan,
                     size: 18,
                   ),
-                  label: const Text(
+                  label: Text(
                     'Начать',
                     style: TextStyle(
-                      color: GlassTheme.glowCyan,
+                      color: context.fm.glowCyan,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),

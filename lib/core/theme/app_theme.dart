@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:fitmonster/core/theme/fit_monster_colors.dart';
 
-/// Стиль «стекла» для синего градиентного UI (профиль, диета и т.д.)
+/// Стиль «стекла» под тёмный чёрно-серый UI.
 class AppGlassTheme {
   AppGlassTheme._();
 
-  static const Color primaryElectric = Color(0xFF38BDF8);
+  static const Color primaryElectric = Color(0xFFE879F9);
   static const Color glassFill = Color(0x1AFFFFFF);
-  static const Color textOnDark = Color(0xFFF1F5F9);
-  static const Color textSecondaryOnDark = Color(0xFF94A3B8);
+  static const Color textOnDark = Color(0xFFFFFFFF);
+  static const Color textSecondaryOnDark = Color(0xFFB8B8C0);
 
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF0EA5E9),
-      Color(0xFF0284C7),
-      Color(0xFF0369A1),
+      Color(0xFF242428),
+      Color(0xFF121214),
+      Color(0xFF0A0A0B),
     ],
+    stops: [0.0, 0.45, 1.0],
   );
 }
 
@@ -31,6 +33,34 @@ class AppTheme {
   static const Color surfaceWhite = Color(0xFFFFFFFF); // Белый для карточек
   static const Color textDark = Color(0xFF212121); // Темный текст
   static const Color textGrey = Color(0xFF757575); // Серый текст
+
+  /// Тёмная тема приложения (стекло + [FitMonsterColors]).
+  static ThemeData get glassDarkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFFE879F9),
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF0A0A0B),
+      extensions: const [FitMonsterColors.dark],
+    );
+  }
+
+  /// Светлая тема приложения (стекло + [FitMonsterColors]).
+  static ThemeData get glassLightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF7C3AED),
+        brightness: Brightness.light,
+      ),
+      scaffoldBackgroundColor: const Color(0xFFD0D0D8),
+      extensions: const [FitMonsterColors.light],
+    );
+  }
 
   static ThemeData get lightTheme {
     return ThemeData(

@@ -128,8 +128,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         maxChildSize: 0.95,
         expand: false,
         builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            gradient: GlassTheme.scaffoldGradient,
+          decoration: BoxDecoration(
+            gradient: context.fm.scaffoldGradient,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: SingleChildScrollView(
@@ -157,9 +157,9 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close,
-                          color: GlassTheme.textPrimary,
+                          color: context.fm.textPrimary,
                         ),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
@@ -167,7 +167,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                         child: Center(
                           child: Text(
                             'Ваши результаты',
-                            style: GlassTheme.titleStyle.copyWith(fontSize: 20),
+                            style: context.fm.titleStyle.copyWith(fontSize: 20),
                           ),
                         ),
                       ),
@@ -219,19 +219,19 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   description:
                       'Рекомендуемое количество калорий в день для достижения вашей цели',
                   icon: Icons.flag,
-                  color: GlassTheme.glowCyan,
+                  color: context.fm.glowCyan,
                 ),
                 const SizedBox(height: 24),
 
                 // Макронутриенты
                 Text(
                   'Макронутриенты',
-                  style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                  style: context.fm.titleStyle.copyWith(fontSize: 18),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Рекомендуемое распределение: 30% белки, 30% жиры, 40% углеводы',
-                  style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
+                  style: context.fm.bodyStyle.copyWith(fontSize: 13),
                 ),
                 const SizedBox(height: 16),
 
@@ -272,7 +272,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
                 CustomButton(
                   text: 'Сохранить профиль',
-                  backgroundColor: GlassTheme.gradientTop,
+                  backgroundColor: context.fm.gradientHeaderTop,
                   textColor: Colors.white,
                   onPressed: () async {
                     // Проверить, изменились ли параметры
@@ -324,9 +324,9 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                       final messenger = ScaffoldMessenger.of(context);
                       navigator.pop(true); // Возвращаем true
                       messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Профиль сохранен!'),
-                          backgroundColor: GlassTheme.glowCyan,
+                        SnackBar(
+                          content: const Text('Профиль сохранен!'),
+                          backgroundColor: context.fm.glowCyan,
                         ),
                       );
                     }
@@ -345,7 +345,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       case BMICategory.underweight:
         return Colors.blue;
       case BMICategory.normal:
-        return GlassTheme.glowCyan;
+        return context.fm.glowCyan;
       case BMICategory.overweight:
         return Colors.orange;
       case BMICategory.obese:
@@ -358,11 +358,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     if (_isLoading) {
       return Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: GlassTheme.scaffoldGradient,
+          decoration: BoxDecoration(
+            gradient: context.fm.scaffoldGradient,
           ),
-          child: const Center(
-            child: CircularProgressIndicator(color: GlassTheme.glowCyan),
+          child: Center(
+            child: CircularProgressIndicator(color: context.fm.glowCyan),
           ),
         ),
       );
@@ -371,13 +371,13 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     return Theme(
       data: Theme.of(context).copyWith(
         colorScheme: Theme.of(context).colorScheme.copyWith(
-          primary: GlassTheme.glowCyan,
+          primary: context.fm.glowCyan,
           surface: Colors.transparent,
         ),
         inputDecorationTheme: InputDecorationTheme(
-          labelStyle: const TextStyle(color: GlassTheme.textPrimary),
-          hintStyle: const TextStyle(color: GlassTheme.textSecondary),
-          floatingLabelStyle: const TextStyle(color: GlassTheme.glowCyan),
+          labelStyle: TextStyle(color: context.fm.textPrimary),
+          hintStyle: TextStyle(color: context.fm.textSecondary),
+          floatingLabelStyle: TextStyle(color: context.fm.glowCyan),
           filled: true,
           fillColor: Colors.white.withOpacity(0.1),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
@@ -387,13 +387,13 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: GlassTheme.glowCyan),
+            borderSide: BorderSide(color: context.fm.glowCyan),
           ),
         ),
         textTheme: Theme.of(context).textTheme.copyWith(
-          titleMedium: GlassTheme.titleStyle.copyWith(fontSize: 16),
-          bodyMedium: GlassTheme.bodyStyle,
-          bodyLarge: GlassTheme.bodyStyle,
+          titleMedium: context.fm.titleStyle.copyWith(fontSize: 16),
+          bodyMedium: context.fm.bodyStyle,
+          bodyLarge: context.fm.bodyStyle,
         ),
       ),
       child: Scaffold(
@@ -401,15 +401,15 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         appBar: AppBar(
           title: Text(
             'Настройка профиля',
-            style: GlassTheme.titleStyle.copyWith(fontSize: 20),
+            style: context.fm.titleStyle.copyWith(fontSize: 20),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          iconTheme: const IconThemeData(color: GlassTheme.textPrimary),
+          iconTheme: IconThemeData(color: context.fm.textPrimary),
         ),
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: GlassTheme.scaffoldGradient,
+          decoration: BoxDecoration(
+            gradient: context.fm.scaffoldGradient,
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
@@ -420,12 +420,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 children: [
                   Text(
                     'Расскажите о себе',
-                    style: GlassTheme.titleStyle.copyWith(fontSize: 24),
+                    style: context.fm.titleStyle.copyWith(fontSize: 24),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Эти данные помогут рассчитать вашу норму калорий',
-                    style: GlassTheme.bodyStyle,
+                    style: context.fm.bodyStyle,
                   ),
                   const SizedBox(height: 16),
                   // Информационная подсказка
@@ -438,16 +438,16 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.info_outline,
-                          color: GlassTheme.glowCyan,
+                          color: context.fm.glowCyan,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Мы используем научно обоснованную формулу Mifflin-St Jeor для точного расчета калорий',
-                            style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
+                            style: context.fm.bodyStyle.copyWith(fontSize: 13),
                           ),
                         ),
                       ],
@@ -518,14 +518,14 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   // Пол
                   Text(
                     'Пол',
-                    style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                    style: context.fm.titleStyle.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   SegmentedButton<Gender>(
                     style: SegmentedButton.styleFrom(
                       backgroundColor: Colors.white.withOpacity(0.15),
-                      foregroundColor: GlassTheme.textPrimary,
-                      selectedBackgroundColor: GlassTheme.gradientTop,
+                      foregroundColor: context.fm.textPrimary,
+                      selectedBackgroundColor: context.fm.gradientHeaderTop,
                       selectedForegroundColor: Colors.white,
                       side: BorderSide(color: Colors.white.withOpacity(0.3)),
                     ),
@@ -553,15 +553,15 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   // Уровень активности
                   Text(
                     'Уровень активности',
-                    style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                    style: context.fm.titleStyle.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   ...ActivityLevel.values.map(
                     (level) => RadioListTile<ActivityLevel>(
-                      activeColor: GlassTheme.gradientTop,
+                      activeColor: context.fm.gradientHeaderTop,
                       title: Text(
                         level.description,
-                        style: GlassTheme.bodyStyle,
+                        style: context.fm.bodyStyle,
                       ),
                       value: level,
                       groupValue: _activityLevel,
@@ -577,14 +577,14 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   // Цель
                   Text(
                     'Ваша цель',
-                    style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                    style: context.fm.titleStyle.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   SegmentedButton<Goal>(
                     style: SegmentedButton.styleFrom(
                       backgroundColor: Colors.white.withOpacity(0.15),
-                      foregroundColor: GlassTheme.textPrimary,
-                      selectedBackgroundColor: GlassTheme.gradientTop,
+                      foregroundColor: context.fm.textPrimary,
+                      selectedBackgroundColor: context.fm.gradientHeaderTop,
                       selectedForegroundColor: Colors.white,
                       side: BorderSide(color: Colors.white.withOpacity(0.3)),
                     ),
@@ -617,7 +617,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   CustomButton(
                     text: 'Рассчитать',
                     onPressed: _calculateAndShowResults,
-                    backgroundColor: GlassTheme.gradientTop,
+                    backgroundColor: context.fm.gradientHeaderTop,
                     textColor: Colors.white,
                   ),
                 ],
@@ -672,22 +672,22 @@ class _ResultCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GlassTheme.bodyStyle.copyWith(
+                      style: context.fm.bodyStyle.copyWith(
                         fontSize: 13,
-                        color: GlassTheme.textSecondary,
+                        color: context.fm.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       value,
-                      style: GlassTheme.titleStyle.copyWith(
+                      style: context.fm.titleStyle.copyWith(
                         fontSize: 20,
                         color: color,
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                      style: context.fm.bodyStyle.copyWith(fontSize: 12),
                     ),
                   ],
                 ),
@@ -707,13 +707,13 @@ class _ResultCard extends StatelessWidget {
                 Icon(
                   Icons.lightbulb_outline,
                   size: 18,
-                  color: GlassTheme.glowCyan,
+                  color: context.fm.glowCyan,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     description,
-                    style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                    style: context.fm.bodyStyle.copyWith(fontSize: 12),
                   ),
                 ),
               ],
@@ -749,7 +749,7 @@ class _MacroCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GlassTheme.bodyStyle.copyWith(
+            style: context.fm.bodyStyle.copyWith(
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -757,12 +757,12 @@ class _MacroCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: GlassTheme.titleStyle.copyWith(fontSize: 18, color: color),
+            style: context.fm.titleStyle.copyWith(fontSize: 18, color: color),
           ),
           const SizedBox(height: 2),
           Text(
             percentage,
-            style: GlassTheme.bodyStyle.copyWith(
+            style: context.fm.bodyStyle.copyWith(
               fontSize: 12,
               color: color,
               fontWeight: FontWeight.w500,
@@ -772,7 +772,7 @@ class _MacroCard extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: GlassTheme.bodyStyle.copyWith(fontSize: 10),
+            style: context.fm.bodyStyle.copyWith(fontSize: 10),
           ),
         ],
       ),

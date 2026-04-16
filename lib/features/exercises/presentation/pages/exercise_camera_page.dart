@@ -1,9 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
-import 'package:fitmonster/core/theme/theme_provider.dart';
 import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/features/exercises/domain/models/exercise.dart';
 import 'package:fitmonster/features/exercises/domain/models/workout_complex.dart';
@@ -332,12 +330,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       } else {
         final pose = poses.first;
         final confidence = _calculatePoseConfidence(pose);
-        if (confidence < 50) {
+        if (confidence < 48) {
           _feedback = 'Улучшите освещение и встаньте ближе';
-        } else {
-          _feedback = 'Отличная техника! (${_currentFps.toStringAsFixed(0)} FPS)';
-          _analyzeExercise(poses);
         }
+        _analyzeExercise(poses);
       }
       if (mounted) {
         final now = DateTime.now();
@@ -477,26 +473,36 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     
     return landmarkCount > 0 ? (totalConfidence / landmarkCount) * 100 : 0.0;
   }
+
+  /// Оценка техники для UI: ритм/«танец» — жёсткая шкала (типично 20–55%), силовые — мягче.
+  double _computeFormScorePercent(Pose pose, RepCountResult result) {
+    final landmarkPct = _calculatePoseConfidence(pose);
+    final conf = result.confidence.clamp(0.0, 1.0);
+    final movNorm = (result.movementQuality / 2).clamp(0.0, 1.0);
+    final product = (conf * movNorm).clamp(0.0, 1.0);
+    final rhythm = ImprovedRepCounter.isRhythmOrDanceExercise(widget.exercise.id);
+    if (rhythm) {
+      return (6 + product * 36 + conf * 12 + landmarkPct * 0.06).clamp(0, 100);
+    }
+    return (landmarkPct * 0.16 + conf * 100 * 0.36 + movNorm * 100 * 0.48).clamp(0, 100);
+  }
+
+  bool _repTechniqueCorrect(double formPct) {
+    if (ImprovedRepCounter.isRhythmOrDanceExercise(widget.exercise.id)) {
+      return formPct >= 46;
+    }
+    return formPct >= 58;
+  }
   
   void _analyzeExercise(List<Pose> poses) {
     if (poses.isEmpty) return;
     
     final pose = poses.first;
     
-    // Подсчитываем уверенность детекции
-    double totalConfidence = 0;
-    int landmarkCount = 0;
-    
-    for (final landmark in pose.landmarks.values) {
-      totalConfidence += landmark.likelihood;
-      landmarkCount++;
-    }
-    
-    if (landmarkCount > 0) {
-      double averageConfidence = totalConfidence / landmarkCount;
-      _formScore = (averageConfidence * 100).clamp(0, 100);
-      
+    if (pose.landmarks.isNotEmpty) {
       final result = _repCounter.analyzePose(pose);
+      _formScore = _computeFormScorePercent(pose, result);
+
       final newCount = result.repCount;
       if (newCount > _repCount) {
         _repCount = newCount;
@@ -527,7 +533,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           _workoutService.addRep(
             _currentSession!,
             formScore: _formScore,
-            isCorrect: _formScore > 60,
+            isCorrect: _repTechniqueCorrect(_formScore),
           ).then((session) {
             _currentSession = session;
           }).catchError((e) {
@@ -536,8 +542,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         }
       }
       
-      // Обновляем обратную связь
-      if (result.confidence > 0.5) {
+      if (result.confidence > 0.42) {
         _feedback = result.feedback;
       }
     }
@@ -711,7 +716,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         _startRestTimer(seconds);
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: GlassTheme.gradientTop,
+        backgroundColor: context.fm.gradientHeaderTop,
         foregroundColor: Colors.white,
       ),
       child: Text(label),
@@ -833,80 +838,76 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: GlassTheme.scaffoldGradient,
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        // Шапка в общем блоке: назад + название по центру
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back, color: GlassTheme.textPrimary),
-                                onPressed: () => Navigator.of(context).pop(),
-                              ),
-                              Expanded(
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        widget.exercise.nameRu,
-                                        style: GlassTheme.titleStyle.copyWith(fontSize: 18),
-                                      ),
-                                      if (widget.complex != null && widget.currentExerciseIndex != null)
-                                        Text(
-                                          '${widget.currentExerciseIndex! + 1} из ${widget.complex!.exerciseIds.length} • ${widget.complex!.name}',
-                                          style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 48),
-                            ],
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: context.fm.scaffoldGradient,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    // Шапка в общем блоке: назад + название по центру
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.arrow_back, color: context.fm.textPrimary),
+                            onPressed: () => Navigator.of(context).pop(),
                           ),
-                        ),
-                        Expanded(
-                          child: _isInitialized
-                              ? _buildMainInterface(themeProvider)
-                              : Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const CircularProgressIndicator(color: GlassTheme.glowCyan),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Инициализация камеры...',
-                                        style: GlassTheme.titleStyle.copyWith(fontSize: 18),
-                                      ),
-                                    ],
+                          Expanded(
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    widget.exercise.nameRu,
+                                    style: context.fm.titleStyle.copyWith(fontSize: 18),
                                   ),
-                                ),
-                        ),
-                      ],
+                                  if (widget.complex != null && widget.currentExerciseIndex != null)
+                                    Text(
+                                      '${widget.currentExerciseIndex! + 1} из ${widget.complex!.exerciseIds.length} • ${widget.complex!.name}',
+                                      style: context.fm.bodyStyle.copyWith(fontSize: 12),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 48),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: _isInitialized
+                          ? _buildMainInterface()
+                          : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(color: context.fm.glowCyan),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Инициализация камеры...',
+                                    style: context.fm.titleStyle.copyWith(fontSize: 18),
+                                  ),
+                                ],
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildMainInterface(ThemeProvider themeProvider) {
+  Widget _buildMainInterface() {
     return Column(
       children: [
         // Камера
@@ -1041,10 +1042,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                                 builder: (context) {
                                   final remaining = widget.complex!.exerciseIds.length - widget.currentExerciseIndex! - 1;
                                   if (remaining == 0) {
-                                    return const Text(
+                                    return Text(
                                       'Последнее упражнение!',
                                       style: TextStyle(
-                                        color: GlassTheme.gradientTop,
+                                        color: context.fm.gradientHeaderTop,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -1140,7 +1141,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           ),
         ),
         
-        // Статистика и управление (фон градиента просвечивает)
+        // Статистика и управление
         Expanded(
           flex: 2,
           child: Container(
@@ -1153,13 +1154,12 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildStatCard(
-                      _getStatLabel(), 
-                      _getStatValue(), 
-                      _getStatIcon(), 
-                      themeProvider
+                      _getStatLabel(),
+                      _getStatValue(),
+                      _getStatIcon(),
                     ),
-                    _buildStatCard('Техника', '${_formScore.toInt()}%', Icons.star, themeProvider),
-                    _buildStatCard('Время', _formatDuration(_workoutDuration), Icons.timer, themeProvider),
+                    _buildStatCard('Техника', '${_formScore.toInt()}%', Icons.star),
+                    _buildStatCard('Время', _formatDuration(_workoutDuration), Icons.timer),
                   ],
                 ),
                 
@@ -1171,18 +1171,19 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _isRecording
-                        ? GlassTheme.gradientTop.withValues(alpha: 0.2)
-                        : Colors.white.withOpacity(0.1),
+                        ? context.fm.surfaceCardMuted
+                        : context.fm.surfaceCard,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _isRecording
-                          ? GlassTheme.gradientTop
-                          : Colors.white.withOpacity(0.2),
+                          ? context.fm.glowCyan
+                          : context.fm.outlineMuted,
+                      width: _isRecording ? 1.5 : 1,
                     ),
                   ),
                   child: Text(
                     _feedback,
-                    style: GlassTheme.bodyStyle.copyWith(
+                    style: context.fm.bodyStyle.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1203,9 +1204,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                         onPressed: _isRecording ? null : _startExercise,
                         icon: Icons.play_arrow,
                         label: 'Начать',
-                        color: GlassTheme.gradientTop,
+                        color: context.fm.accentButtonTint,
                         isEnabled: !_isRecording,
-                        themeProvider: themeProvider,
                       ),
                       
                       // Кнопка "Остановить"
@@ -1215,7 +1215,6 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                         label: 'Стоп',
                         color: Colors.red,
                         isEnabled: _isRecording,
-                        themeProvider: themeProvider,
                       ),
                     ],
                   ),
@@ -1234,7 +1233,6 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     required String label,
     required Color color,
     required bool isEnabled,
-    required ThemeProvider themeProvider,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1244,8 +1242,11 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: isEnabled ? color : Colors.white.withOpacity(0.2),
+            color: isEnabled ? color : context.fm.surfaceCardMuted,
             borderRadius: BorderRadius.circular(28),
+            border: isEnabled
+                ? null
+                : Border.all(color: context.fm.outlineMuted, width: 1),
             boxShadow: isEnabled ? [
               BoxShadow(
                 color: color.withValues(alpha: 0.3),
@@ -1264,7 +1265,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                 scale: isEnabled ? 1.0 : 0.9,
                 child: Icon(
                   icon,
-                  color: isEnabled ? Colors.white : GlassTheme.textSecondary,
+                  color: isEnabled ? Colors.white : context.fm.textSecondary,
                   size: 28,
                 ),
               ),
@@ -1277,7 +1278,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: isEnabled ? color : GlassTheme.textSecondary,
+            color: isEnabled ? color : context.fm.textSecondary,
           ),
           child: Text(label),
         ),
@@ -1285,25 +1286,24 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     );
   }
   
-  Widget _buildStatCard(String title, String value, IconData icon, ThemeProvider themeProvider) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
+  Widget _buildStatCard(String title, String value, IconData icon) {
+    return GlassTheme.framedOpaque(
+      context: context,
+      borderRadius: 14,
+      frameWidth: 1.75,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: GlassTheme.glowCyan, size: 18),
+          Icon(icon, color: context.fm.glowCyan, size: 18),
           const SizedBox(height: 4),
           Text(
             value,
-            style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+            style: context.fm.titleStyle.copyWith(fontSize: 16),
           ),
           Text(
             title,
-            style: GlassTheme.bodyStyle.copyWith(fontSize: 10),
+            style: context.fm.bodyStyle.copyWith(fontSize: 10),
           ),
         ],
       ),

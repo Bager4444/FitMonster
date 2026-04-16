@@ -89,10 +89,10 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
             children: [
               Text(
                 'Статистика питания',
-                style: GlassTheme.titleStyle.copyWith(fontSize: 20),
+                style: context.fm.titleStyle.copyWith(fontSize: 20),
               ),
               IconButton(
-                icon: const Icon(Icons.calendar_today, color: GlassTheme.textPrimary),
+                icon: Icon(Icons.calendar_today, color: context.fm.textPrimary),
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -102,7 +102,7 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
                     builder: (context, child) => Theme(
                       data: Theme.of(context).copyWith(
                         colorScheme: Theme.of(context).colorScheme.copyWith(
-                          primary: GlassTheme.gradientTop,
+                          primary: context.fm.gradientHeaderTop,
                           onPrimary: Colors.white,
                         ),
                         textButtonTheme: TextButtonThemeData(
@@ -111,33 +111,33 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
                         inputDecorationTheme: InputDecorationThemeData(
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: GlassTheme.gradientTop),
+                            borderSide: BorderSide(color: context.fm.gradientHeaderTop),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: GlassTheme.gradientTop, width: 2),
+                            borderSide: BorderSide(color: context.fm.gradientHeaderTop, width: 2),
                           ),
-                          labelStyle: const TextStyle(color: GlassTheme.gradientTop),
-                          floatingLabelStyle: const TextStyle(color: GlassTheme.gradientTop),
-                          hintStyle: const TextStyle(color: GlassTheme.gradientTop),
+                          labelStyle: TextStyle(color: context.fm.gradientHeaderTop),
+                          floatingLabelStyle: TextStyle(color: context.fm.gradientHeaderTop),
+                          hintStyle: TextStyle(color: context.fm.gradientHeaderTop),
                         ),
                         dialogTheme: DialogThemeData(
                           shape: RoundedRectangleBorder(
-                            side: const BorderSide(color: GlassTheme.gradientTop, width: 2),
+                            side: BorderSide(color: context.fm.gradientHeaderTop, width: 2),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          titleTextStyle: GlassTheme.titleStyle.copyWith(
-                            color: GlassTheme.gradientTop,
+                          titleTextStyle: context.fm.titleStyle.copyWith(
+                            color: context.fm.gradientHeaderTop,
                             fontSize: 20,
                           ),
                         ),
                         datePickerTheme: DatePickerThemeData(
-                          headerHeadlineStyle: GlassTheme.titleStyle.copyWith(
-                            color: GlassTheme.gradientTop,
+                          headerHeadlineStyle: context.fm.titleStyle.copyWith(
+                            color: context.fm.gradientHeaderTop,
                             fontSize: 24,
                           ),
-                          headerHelpStyle: GlassTheme.bodyStyle.copyWith(
-                            color: GlassTheme.gradientTop,
+                          headerHelpStyle: context.fm.bodyStyle.copyWith(
+                            color: context.fm.gradientHeaderTop,
                           ),
                         ),
                       ),
@@ -172,7 +172,7 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Макросы сегодня', style: GlassTheme.titleStyle.copyWith(fontSize: 16)),
+          Text('Макросы сегодня', style: context.fm.titleStyle.copyWith(fontSize: 16)),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -198,9 +198,9 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
   Widget _buildMacroColumn(String label, String value, String target, double progress) {
     return Column(
       children: [
-        Text(value, style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
-        Text(label, style: GlassTheme.bodyStyle.copyWith(fontSize: 11)),
-        Text('/ $target', style: GlassTheme.bodyStyle.copyWith(fontSize: 10)),
+        Text(value, style: context.fm.titleStyle.copyWith(fontSize: 18)),
+        Text(label, style: context.fm.bodyStyle.copyWith(fontSize: 11)),
+        Text('/ $target', style: context.fm.bodyStyle.copyWith(fontSize: 10)),
       ],
     );
   }
@@ -208,12 +208,12 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
   Widget _buildProgressRow(String label, double progress) {
     return Row(
       children: [
-        SizedBox(width: 72, child: Text(label, style: GlassTheme.bodyStyle.copyWith(fontSize: 12))),
+        SizedBox(width: 72, child: Text(label, style: context.fm.bodyStyle.copyWith(fontSize: 12))),
         Expanded(
           child: LinearProgressIndicator(
             value: progress,
             backgroundColor: Colors.white.withOpacity(0.2),
-            valueColor: const AlwaysStoppedAnimation<Color>(GlassTheme.glowCyan),
+            valueColor: AlwaysStoppedAnimation<Color>(context.fm.glowCyan),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -227,15 +227,15 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Сегодня', style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
+          Text('Сегодня', style: context.fm.titleStyle.copyWith(fontSize: 18)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem('Калории', '${summary.totalCalories}', GlassTheme.textPrimary),
-              _buildStatItem('Белки', '${summary.totalProtein.round()}г', GlassTheme.textPrimary),
-              _buildStatItem('Жиры', '${summary.totalFat.round()}г', GlassTheme.textPrimary),
-              _buildStatItem('Углеводы', '${summary.totalCarbs.round()}г', GlassTheme.textPrimary),
+              _buildStatItem('Калории', '${summary.totalCalories}', context.fm.textPrimary),
+              _buildStatItem('Белки', '${summary.totalProtein.round()}г', context.fm.textPrimary),
+              _buildStatItem('Жиры', '${summary.totalFat.round()}г', context.fm.textPrimary),
+              _buildStatItem('Углеводы', '${summary.totalCarbs.round()}г', context.fm.textPrimary),
             ],
           ),
           const SizedBox(height: 16),
@@ -253,7 +253,13 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
                   ),
                 );
               },
-              child: const Text('Открыть дневник', style: TextStyle(color: GlassTheme.glowCyan, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Открыть дневник',
+                style: TextStyle(
+                  color: context.fm.glowCyan,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],
@@ -266,7 +272,7 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
       children: [
         Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 4),
-        Text(label, style: GlassTheme.bodyStyle.copyWith(fontSize: 12)),
+        Text(label, style: context.fm.bodyStyle.copyWith(fontSize: 12)),
       ],
     );
   }
@@ -281,7 +287,7 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Калории за неделю', style: GlassTheme.titleStyle.copyWith(fontSize: 16)),
+          Text('Калории за неделю', style: context.fm.titleStyle.copyWith(fontSize: 16)),
           const SizedBox(height: 24),
           SizedBox(
             height: 200,
@@ -301,7 +307,13 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
                         final date = _selectedDate.subtract(Duration(days: 6 - index));
                         final dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
                         final dayIndex = (date.weekday - 1) % 7;
-                        return Text(dayNames[dayIndex], style: const TextStyle(fontSize: 12, color: GlassTheme.textSecondary));
+                        return Text(
+                          dayNames[dayIndex],
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.fm.textSecondary,
+                          ),
+                        );
                       },
                     ),
                   ),
@@ -309,7 +321,13 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
-                      getTitlesWidget: (value, meta) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 12, color: GlassTheme.textSecondary)),
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toInt().toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.fm.textSecondary,
+                        ),
+                      ),
                     ),
                   ),
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -326,7 +344,7 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
                     barRods: [
                       BarChartRodData(
                         toY: summary.totalCalories.toDouble(),
-                        color: GlassTheme.glowCyan,
+                        color: context.fm.glowCyan,
                         width: 20,
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                       ),
@@ -349,7 +367,7 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Распределение БЖУ', style: GlassTheme.titleStyle.copyWith(fontSize: 16)),
+          Text('Распределение БЖУ', style: context.fm.titleStyle.copyWith(fontSize: 16)),
           const SizedBox(height: 24),
           Row(
             children: [
@@ -359,9 +377,9 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
                 child: PieChart(
                   PieChartData(
                     sections: [
-                      PieChartSectionData(value: summary.totalProtein, title: '', color: GlassTheme.glowCyan, radius: 40),
-                      PieChartSectionData(value: summary.totalFat, title: '', color: GlassTheme.glowCyan.withOpacity(0.7), radius: 40),
-                      PieChartSectionData(value: summary.totalCarbs, title: '', color: GlassTheme.glowCyan.withOpacity(0.5), radius: 40),
+                      PieChartSectionData(value: summary.totalProtein, title: '', color: context.fm.glowCyan, radius: 40),
+                      PieChartSectionData(value: summary.totalFat, title: '', color: context.fm.glowCyan.withOpacity(0.7), radius: 40),
+                      PieChartSectionData(value: summary.totalCarbs, title: '', color: context.fm.glowCyan.withOpacity(0.5), radius: 40),
                     ],
                     sectionsSpace: 2,
                     centerSpaceRadius: 30,
@@ -391,10 +409,17 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
   Widget _buildMacroLegend(String label, double value) {
     return Row(
       children: [
-        Container(width: 10, height: 10, decoration: const BoxDecoration(color: GlassTheme.glowCyan, shape: BoxShape.circle)),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: context.fm.glowCyan,
+            shape: BoxShape.circle,
+          ),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: Text(label, style: GlassTheme.bodyStyle.copyWith(fontSize: 13))),
-        Text('${value.toStringAsFixed(1)}г', style: GlassTheme.titleStyle.copyWith(fontSize: 13)),
+        Expanded(child: Text(label, style: context.fm.bodyStyle.copyWith(fontSize: 13))),
+        Text('${value.toStringAsFixed(1)}г', style: context.fm.titleStyle.copyWith(fontSize: 13)),
       ],
     );
   }
@@ -421,15 +446,15 @@ class _DietDashboardPageState extends State<DietDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Средние показатели за неделю', style: GlassTheme.titleStyle.copyWith(fontSize: 16)),
+          Text('Средние показатели за неделю', style: context.fm.titleStyle.copyWith(fontSize: 16)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem('Калории', '$avgCalories', GlassTheme.textPrimary),
-              _buildStatItem('Белки', '${avgProtein.toStringAsFixed(1)}г', GlassTheme.textPrimary),
-              _buildStatItem('Жиры', '${avgFat.toStringAsFixed(1)}г', GlassTheme.textPrimary),
-              _buildStatItem('Углеводы', '${avgCarbs.toStringAsFixed(1)}г', GlassTheme.textPrimary),
+              _buildStatItem('Калории', '$avgCalories', context.fm.textPrimary),
+              _buildStatItem('Белки', '${avgProtein.toStringAsFixed(1)}г', context.fm.textPrimary),
+              _buildStatItem('Жиры', '${avgFat.toStringAsFixed(1)}г', context.fm.textPrimary),
+              _buildStatItem('Углеводы', '${avgCarbs.toStringAsFixed(1)}г', context.fm.textPrimary),
             ],
           ),
         ],

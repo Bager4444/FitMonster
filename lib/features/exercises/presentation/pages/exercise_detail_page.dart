@@ -16,11 +16,12 @@ class ExerciseDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: GlassTheme.scaffoldGradient),
+        decoration: BoxDecoration(gradient: context.fm.scaffoldGradient),
         child: SafeArea(
           child: CustomScrollView(
             slivers: [
@@ -30,14 +31,14 @@ class ExerciseDetailPage extends StatelessWidget {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: GlassTheme.textPrimary),
+                        icon: Icon(Icons.arrow_back, color: context.fm.textPrimary),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       Expanded(
                         child: Center(
                           child: Text(
                             exercise.nameRu,
-                            style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                            style: context.fm.titleStyle.copyWith(fontSize: 18),
                           ),
                         ),
                       ),
@@ -52,7 +53,7 @@ class ExerciseDetailPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSection('Описание', exercise.description, Icons.description),
+                      _buildSection(context, 'Описание', exercise.description, Icons.description),
                       const SizedBox(height: 24),
                       _buildInstructionsSection(context),
                       const SizedBox(height: 24),
@@ -74,28 +75,21 @@ class ExerciseDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPill(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
-        color: Colors.white.withOpacity(0.1),
-      ),
-      child: Text(text, style: GlassTheme.bodyStyle.copyWith(fontSize: 12)),
-    );
-  }
-
-  Widget _buildSection(String title, String content, IconData icon) {
+  Widget _buildSection(
+    BuildContext context,
+    String title,
+    String content,
+    IconData icon,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: GlassTheme.glowCyan, size: 20),
+            Icon(icon, color: context.fm.glowCyan, size: 20),
             const SizedBox(width: 8),
-            Text(title, style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
+            Text(title, style: context.fm.titleStyle.copyWith(fontSize: 18)),
           ],
         ),
         const SizedBox(height: 12),
@@ -103,7 +97,7 @@ class ExerciseDetailPage extends StatelessWidget {
           child: Text(
             content,
             textAlign: TextAlign.center,
-            style: GlassTheme.bodyStyle.copyWith(fontSize: 14, height: 1.5),
+            style: context.fm.bodyStyle.copyWith(fontSize: 14, height: 1.5),
           ),
         ),
       ],
@@ -117,9 +111,9 @@ class ExerciseDetailPage extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.list_alt, color: GlassTheme.glowCyan, size: 20),
+            Icon(Icons.list_alt, color: context.fm.glowCyan, size: 20),
             const SizedBox(width: 8),
-            Text('Техника выполнения', style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
+            Text('Техника выполнения', style: context.fm.titleStyle.copyWith(fontSize: 18)),
           ],
         ),
         const SizedBox(height: 16),
@@ -131,7 +125,7 @@ class ExerciseDetailPage extends StatelessWidget {
                 width: 4,
                 margin: const EdgeInsets.only(top: 12, bottom: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: const Color(0xFF3A3A42),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -147,7 +141,7 @@ class ExerciseDetailPage extends StatelessWidget {
                         child: Text(
                           entry.value,
                           textAlign: TextAlign.center,
-                          style: GlassTheme.bodyStyle.copyWith(fontSize: 14, height: 1.5),
+                          style: context.fm.bodyStyle.copyWith(fontSize: 14, height: 1.5),
                         ),
                       ),
                     );
@@ -168,9 +162,9 @@ class ExerciseDetailPage extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.warning_amber, color: GlassTheme.glowCyan, size: 20),
+            Icon(Icons.warning_amber, color: context.fm.glowCyan, size: 20),
             const SizedBox(width: 8),
-            Text('Частые ошибки', style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
+            Text('Частые ошибки', style: context.fm.titleStyle.copyWith(fontSize: 18)),
           ],
         ),
         const SizedBox(height: 12),
@@ -186,13 +180,13 @@ class ExerciseDetailPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.close, color: GlassTheme.textSecondary, size: 16),
+                    Icon(Icons.close, color: context.fm.textSecondary, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         mistake,
                         textAlign: TextAlign.center,
-                        style: GlassTheme.bodyStyle.copyWith(fontSize: 14, height: 1.5),
+                        style: context.fm.bodyStyle.copyWith(fontSize: 14, height: 1.5),
                       ),
                     ),
                   ],
@@ -211,9 +205,9 @@ class ExerciseDetailPage extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.accessibility_new, color: GlassTheme.glowCyan, size: 20),
+            Icon(Icons.accessibility_new, color: context.fm.glowCyan, size: 20),
             const SizedBox(width: 8),
-            Text('Работающие мышцы', style: GlassTheme.titleStyle.copyWith(fontSize: 18)),
+            Text('Работающие мышцы', style: context.fm.titleStyle.copyWith(fontSize: 18)),
           ],
         ),
         const SizedBox(height: 12),
@@ -224,10 +218,10 @@ class ExerciseDetailPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(100),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
-              color: Colors.white.withOpacity(0.1),
+              border: Border.all(color: context.fm.outlineMuted),
+              color: context.fm.surfaceCardMuted,
             ),
-            child: Text(muscle, style: GlassTheme.bodyStyle.copyWith(fontSize: 12)),
+            child: Text(muscle, style: context.fm.bodyStyle.copyWith(fontSize: 12)),
           )).toList(),
         ),
       ],
@@ -239,11 +233,11 @@ class ExerciseDetailPage extends StatelessWidget {
       width: double.infinity,
       height: 56,
       decoration: BoxDecoration(
-        gradient: GlassTheme.primaryButtonGradient,
+        gradient: context.fm.primaryButtonGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: GlassTheme.glowCyan.withOpacity(0.3),
+            color: context.fm.glowCyan.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),

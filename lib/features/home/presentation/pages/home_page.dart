@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fitmonster/core/theme/glass_theme.dart';
+import 'package:fitmonster/core/theme/theme_provider.dart';
 import 'package:fitmonster/core/providers/nav_index_provider.dart';
 import 'package:fitmonster/features/exercises/presentation/pages/exercises_page.dart';
 import 'package:fitmonster/features/diet/presentation/pages/diet_page.dart';
@@ -9,7 +10,7 @@ import 'package:fitmonster/features/exercises/presentation/pages/workout_complex
 import 'package:fitmonster/features/profile/presentation/pages/profile_page.dart';
 import 'package:fitmonster/features/ai/presentation/pages/ai_chat_page.dart';
 
-/// Главная страница: Deep Blue градиент, плавающая стеклянная навигация.
+/// Главная страница: тёмный фон, плавающая навигация со стеклянными карточками.
 /// Вкладки создаются лениво — только при первом открытии, чтобы не строить все экраны при старте.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,14 +29,15 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
         extendBody: true,
         extendBodyBehindAppBar: true,
         body: Stack(
           children: [
-            GlassTheme.buildScaffoldBackground(),
+            GlassTheme.buildScaffoldBackground(context),
             SafeArea(
               top: true,
               bottom: false,
@@ -80,12 +82,43 @@ class _HomePageState extends State<HomePage> {
                   },
                   padding: const EdgeInsets.all(14),
                   borderRadius: 28,
-                  blurSigma: 16,
-                  child: const Icon(
+                  child: Icon(
                     Icons.smart_toy,
-                    color: GlassTheme.glowCyan,
+                    color: context.fm.textPrimary,
                     size: 28,
                   ),
+                ),
+              ),
+            ),
+            // Поверх контента вкладок и навигации (последний в Stack).
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              right: 16,
+              child: Tooltip(
+                message: isDark
+                    ? 'Включить светлую тему'
+                    : 'Включить тёмную тему',
+                child: Consumer<ThemeProvider>(
+                  builder: (context, theme, _) {
+                    return SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: GlassContainer(
+                        borderRadius: 22,
+                        padding: EdgeInsets.zero,
+                        onTap: () => theme.toggleTheme(),
+                        child: Center(
+                          child: Icon(
+                            theme.isDarkMode
+                                ? Icons.light_mode_rounded
+                                : Icons.dark_mode_rounded,
+                            color: context.fm.textPrimary,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -133,6 +166,9 @@ class _NavItem extends StatelessWidget {
     return Consumer<NavIndexProvider>(
       builder: (context, nav, _) {
         final isActive = nav.index == index;
+        final fm = context.fm;
+        final inactiveBorder =
+            fm.isDark ? const Color(0x33FFFFFF) : const Color(0x33000000);
         return GestureDetector(
           onTap: () => nav.setIndex(index),
           behavior: HitTestBehavior.opaque,
@@ -141,14 +177,19 @@ class _NavItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             decoration: BoxDecoration(
               color: isActive
-                  ? GlassTheme.glowCyan.withOpacity(0.2)
+                  ? (fm.isDark
+                      ? const Color(0xFF2E2E34)
+                      : fm.surfaceCardMuted)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
+              border: isActive
+                  ? Border.all(color: const Color(0xFFEC4899), width: 2.5)
+                  : Border.all(color: inactiveBorder, width: 1),
               boxShadow: isActive
-                  ? [
+                  ? const [
                       BoxShadow(
-                        color: GlassTheme.glowCyan.withOpacity(0.5),
-                        blurRadius: 12,
+                        color: Color(0x664C1D95),
+                        blurRadius: 10,
                         spreadRadius: 0,
                       ),
                     ]
@@ -161,7 +202,7 @@ class _NavItem extends StatelessWidget {
                 children: [
                   Icon(
                     icon,
-                    color: isActive ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+                    color: isActive ? fm.textPrimary : fm.textSecondary,
                     size: 22,
                   ),
                   const SizedBox(height: 2),
@@ -171,7 +212,7 @@ class _NavItem extends StatelessWidget {
                       label,
                       maxLines: 1,
                       style: TextStyle(
-                        color: isActive ? GlassTheme.glowCyan : GlassTheme.textSecondary,
+                        color: isActive ? fm.textPrimary : fm.textSecondary,
                         fontSize: 11,
                         fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                       ),

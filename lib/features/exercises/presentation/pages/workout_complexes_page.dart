@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:fitmonster/core/theme/theme_provider.dart';
 import 'package:fitmonster/core/theme/glass_theme.dart';
 import 'package:fitmonster/features/exercises/data/workout_complexes_database.dart';
 import 'package:fitmonster/features/exercises/data/exercises_database.dart';
@@ -84,16 +82,14 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        final filtered = _getFilteredComplexes();
-        final content = SafeArea(
-          top: true,
-          bottom: true,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(child: _buildHeader(themeProvider)),
-              SliverToBoxAdapter(child: _buildFilters(themeProvider)),
+    final filtered = _getFilteredComplexes();
+    final content = SafeArea(
+      top: true,
+      bottom: true,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeader(context)),
+          SliverToBoxAdapter(child: _buildFilters(context)),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 sliver: SliverList(
@@ -106,17 +102,16 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
-          ),
-        );
-        if (_animationDone) return content;
-        return FadeTransition(opacity: _fadeAnimation, child: content);
-      },
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
     );
+    if (_animationDone) return content;
+    return FadeTransition(opacity: _fadeAnimation, child: content);
   }
 
-  Widget _buildHeader(ThemeProvider themeProvider) {
+  Widget _buildHeader(BuildContext context) {
+    final fm = context.fm;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
@@ -127,7 +122,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
             style: TextStyle(
               fontSize: 34,
               fontWeight: FontWeight.bold,
-              color: themeProvider.textColor,
+              color: fm.textPrimary,
               letterSpacing: -0.5,
             ),
           ),
@@ -136,7 +131,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
             'Готовые программы тренировок',
             style: TextStyle(
               fontSize: 15,
-              color: themeProvider.secondaryTextColor,
+              color: fm.textSecondary,
               height: 1.4,
             ),
           ),
@@ -145,7 +140,8 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
     );
   }
 
-  Widget _buildFilters(ThemeProvider themeProvider) {
+  Widget _buildFilters(BuildContext context) {
+    final fm = context.fm;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       margin: const EdgeInsets.only(bottom: 8),
@@ -153,12 +149,12 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Category Filter
-          const Text(
+          Text(
             'Категория',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: fm.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -182,21 +178,27 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       decoration: BoxDecoration(
-                        color: isSelected 
-                            ? Colors.white 
-                            : Colors.white.withValues(alpha: 0.2),
+                        color: isSelected
+                            ? (fm.isDark
+                                ? Colors.white
+                                : fm.surfaceCard)
+                            : (fm.isDark
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : fm.surfaceCardMuted),
                         borderRadius: BorderRadius.circular(25),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: fm.isDark
+                              ? Colors.white.withValues(alpha: 0.3)
+                              : fm.outlineMuted,
                           width: 1,
                         ),
                       ),
                       child: Text(
                         category,
                         style: TextStyle(
-                          color: isSelected 
-                              ? const Color(0xFF667eea) 
-                              : Colors.white,
+                          color: isSelected
+                              ? const Color(0xFF667eea)
+                              : (fm.isDark ? Colors.white : fm.textPrimary),
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -211,12 +213,12 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
           const SizedBox(height: 20),
           
           // Difficulty Filter
-          const Text(
+          Text(
             'Сложность',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: fm.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -240,21 +242,27 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       decoration: BoxDecoration(
-                        color: isSelected 
-                            ? Colors.white 
-                            : Colors.white.withValues(alpha: 0.2),
+                        color: isSelected
+                            ? (fm.isDark
+                                ? Colors.white
+                                : fm.surfaceCard)
+                            : (fm.isDark
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : fm.surfaceCardMuted),
                         borderRadius: BorderRadius.circular(25),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: fm.isDark
+                              ? Colors.white.withValues(alpha: 0.3)
+                              : fm.outlineMuted,
                           width: 1,
                         ),
                       ),
                       child: Text(
                         difficulty,
                         style: TextStyle(
-                          color: isSelected 
-                              ? const Color(0xFF667eea) 
-                              : Colors.white,
+                          color: isSelected
+                              ? const Color(0xFF667eea)
+                              : (fm.isDark ? Colors.white : fm.textPrimary),
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -276,13 +284,10 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
       child: InkWell(
         onTap: () => _showWorkoutSettingsDialog(complex),
         borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
-          ),
+        child: GlassTheme.framedOpaque(context: context,
+          borderRadius: 20,
+          frameWidth: 2,
+          padding: const EdgeInsets.all(14),
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -292,8 +297,9 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: context.fm.surfaceCardMuted,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.fm.outlineMuted),
                   ),
                   child: Center(
                     child: Text(
@@ -309,7 +315,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                     children: [
                       Text(
                         complex.name,
-                        style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                        style: context.fm.titleStyle.copyWith(fontSize: 16),
                       ),
                       const SizedBox(height: 2),
                       Row(
@@ -317,36 +323,39 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: context.fm.surfaceCardMuted,
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: context.fm.outlineMuted),
                             ),
                             child: Text(
                               complex.categoryName,
-                              style: GlassTheme.bodyStyle.copyWith(fontSize: 10, fontWeight: FontWeight.w500),
+                              style: context.fm.bodyStyle.copyWith(fontSize: 10, fontWeight: FontWeight.w500),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: context.fm.surfaceCardMuted,
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: context.fm.outlineMuted),
                             ),
                             child: Text(
                               ExerciseColors.getComplexType(complex.exerciseIds),
-                              style: GlassTheme.bodyStyle.copyWith(fontSize: 10, fontWeight: FontWeight.w600),
+                              style: context.fm.bodyStyle.copyWith(fontSize: 10, fontWeight: FontWeight.w600),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: context.fm.surfaceCardMuted,
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: context.fm.outlineMuted),
                             ),
                             child: Text(
                               complex.difficultyName,
-                              style: GlassTheme.bodyStyle.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
+                              style: context.fm.bodyStyle.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ],
@@ -359,21 +368,22 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
             const SizedBox(height: 12),
             Text(
               complex.description,
-              style: GlassTheme.bodyStyle.copyWith(fontSize: 12, height: 1.3),
+              style: context.fm.bodyStyle.copyWith(fontSize: 12, height: 1.3),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: context.fm.surfaceCardMuted,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.fm.outlineMuted),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Упражнения:',
-                    style: GlassTheme.titleStyle.copyWith(fontSize: 14),
+                    style: context.fm.titleStyle.copyWith(fontSize: 14),
                   ),
                   const SizedBox(height: 8),
                   ...complex.exerciseIds.asMap().entries.map((entry) {
@@ -388,13 +398,14 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                             width: 20,
                             height: 20,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: context.fm.surfaceCard,
                               borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: context.fm.outlineMuted, width: 1),
                             ),
                             child: Center(
                               child: Text(
                                 '${idx + 1}',
-                                style: GlassTheme.titleStyle.copyWith(fontSize: 12),
+                                style: context.fm.titleStyle.copyWith(fontSize: 12),
                               ),
                             ),
                           ),
@@ -402,7 +413,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                           Expanded(
                             child: Text(
                               name,
-                              style: GlassTheme.bodyStyle.copyWith(fontSize: 13),
+                              style: context.fm.bodyStyle.copyWith(fontSize: 13),
                             ),
                           ),
                         ],
@@ -415,18 +426,18 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
             const SizedBox(height: 16),
             Row(
               children: [
-                Icon(Icons.timer, color: GlassTheme.textSecondary, size: 16),
+                Icon(Icons.timer, color: context.fm.textSecondary, size: 16),
                 const SizedBox(width: 4),
                 Text(
                   '${complex.estimatedDuration} мин',
-                  style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
+                  style: context.fm.bodyStyle.copyWith(fontSize: 14),
                 ),
                 const SizedBox(width: 16),
-                Icon(Icons.fitness_center, color: GlassTheme.textSecondary, size: 16),
+                Icon(Icons.fitness_center, color: context.fm.textSecondary, size: 16),
                 const SizedBox(width: 4),
                 Text(
                   '${complex.exerciseIds.length} упражнений',
-                  style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
+                  style: context.fm.bodyStyle.copyWith(fontSize: 14),
                 ),
               ],
             ),
@@ -435,19 +446,19 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                gradient: context.fm.primaryButtonGradient,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                border: Border.all(color: context.fm.outlineMuted, width: 1),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.play_arrow, color: Colors.black, size: 20),
+                  Icon(Icons.play_arrow, color: Colors.white, size: 20),
                   SizedBox(width: 8),
                   Text(
                     'Начать комплекс',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -473,42 +484,37 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
         insetPadding: const EdgeInsets.symmetric(horizontal: 24),
         child: Container(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF2979FF),
-                Color(0xFF0D1B2A),
-              ],
-            ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1.5,
-            ),
+            gradient: context.fm.frameGradient,
           ),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: StatefulBuilder(
-                builder: (context, setDialogState) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+          padding: const EdgeInsets.all(2.75),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF141416),
+              borderRadius: BorderRadius.circular(21.25),
+            ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: StatefulBuilder(
+                  builder: (context, setDialogState) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                       Text(
                         'Настройки тренировки',
-                        style: GlassTheme.titleStyle.copyWith(fontSize: 22),
+                        style: context.fm.titleStyle.copyWith(fontSize: 22),
                       ),
                       const SizedBox(height: 20),
                       // Информация о комплексе (стеклянная карточка)
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: context.fm.surfaceCardMuted,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
+                            color: context.fm.outlineMuted,
                           ),
                         ),
                         child: Column(
@@ -516,7 +522,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                           children: [
                             Text(
                               complex.name,
-                              style: GlassTheme.titleStyle.copyWith(fontSize: 18),
+                              style: context.fm.titleStyle.copyWith(fontSize: 18),
                             ),
                             const SizedBox(height: 8),
                             Row(
@@ -524,23 +530,23 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                                 Icon(
                                   Icons.fitness_center,
                                   size: 16,
-                                  color: GlassTheme.textSecondary,
+                                  color: context.fm.textSecondary,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${complex.exerciseIds.length} упражнений',
-                                  style: GlassTheme.bodyStyle,
+                                  style: context.fm.bodyStyle,
                                 ),
                                 const SizedBox(width: 16),
                                 Icon(
                                   Icons.timer,
                                   size: 16,
-                                  color: GlassTheme.textSecondary,
+                                  color: context.fm.textSecondary,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   '~${complex.estimatedDuration} мин',
-                                  style: GlassTheme.bodyStyle,
+                                  style: context.fm.bodyStyle,
                                 ),
                               ],
                             ),
@@ -550,7 +556,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                       const SizedBox(height: 24),
                       Text(
                         'Время перерыва между упражнениями:',
-                        style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                        style: context.fm.titleStyle.copyWith(fontSize: 16),
                       ),
                       const SizedBox(height: 16),
                       Wrap(
@@ -571,21 +577,21 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? GlassTheme.glowCyan
-                                    : Colors.white.withOpacity(0.1),
+                                    ? context.fm.glowCyan
+                                    : context.fm.surfaceCardMuted,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: isSelected
-                                      ? GlassTheme.glowCyan
-                                      : Colors.white.withOpacity(0.2),
+                                      ? context.fm.glowCyan
+                                      : context.fm.outlineMuted,
                                 ),
                               ),
                               child: Text(
                                 '${seconds}с',
                                 style: TextStyle(
                                   color: isSelected
-                                      ? Colors.black
-                                      : GlassTheme.textPrimary,
+                                      ? Colors.white
+                                      : context.fm.textPrimary,
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -596,14 +602,14 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                         }).toList(),
                       ),
                       const SizedBox(height: 16),
-                      // Подсказка: иконка info чёрная по запросу (светлый фон для читаемости)
+                      // Подсказка
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: context.fm.surfaceCard,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
+                            color: context.fm.outlineMuted,
                           ),
                         ),
                         child: Row(
@@ -611,13 +617,13 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                             Icon(
                               Icons.info_outline,
                               size: 20,
-                              color: Colors.black,
+                              color: context.fm.textPrimary,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Вы сможете изменить время перерыва во время тренировки',
-                                style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+                                style: context.fm.bodyStyle.copyWith(fontSize: 12),
                               ),
                             ),
                           ],
@@ -631,7 +637,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                             onPressed: () => Navigator.of(context).pop(),
                             child: Text(
                               'Отмена',
-                              style: TextStyle(color: GlassTheme.textSecondary),
+                              style: TextStyle(color: context.fm.textSecondary),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -648,8 +654,8 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: GlassTheme.glowCyan,
-                              foregroundColor: Colors.black,
+                              backgroundColor: context.fm.glowCyan,
+                              foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -666,6 +672,7 @@ class _WorkoutComplexesPageState extends State<WorkoutComplexesPage>
           ),
         ),
       ),
+    ),
     );
   }
 }

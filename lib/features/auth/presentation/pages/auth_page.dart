@@ -150,7 +150,7 @@ class _AuthPageState extends State<AuthPage> {
       child: Scaffold(
       body: Stack(
         children: [
-          GlassTheme.buildScaffoldBackground(),
+          GlassTheme.buildScaffoldBackground(context),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -163,14 +163,14 @@ class _AuthPageState extends State<AuthPage> {
                     children: [
                       Text(
                         _isRegister ? 'Регистрация' : 'Вход',
-                        style: GlassTheme.titleStyle.copyWith(fontSize: 28),
+                        style: context.fm.titleStyle.copyWith(fontSize: 28),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _isRegister
                             ? 'Создайте аккаунт. На почту придёт ссылка для подтверждения.'
                             : 'Войдите по почте и паролю',
-                        style: GlassTheme.bodyStyle.copyWith(fontSize: 14),
+                        style: context.fm.bodyStyle.copyWith(fontSize: 14),
                       ),
                       const SizedBox(height: 32),
                       _buildGlassField(
@@ -191,7 +191,7 @@ class _AuthPageState extends State<AuthPage> {
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                            color: GlassTheme.textSecondary,
+                            color: context.fm.textSecondary,
                           ),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
@@ -208,7 +208,7 @@ class _AuthPageState extends State<AuthPage> {
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureConfirm ? Icons.visibility_off : Icons.visibility,
-                              color: GlassTheme.textSecondary,
+                              color: context.fm.textSecondary,
                             ),
                             onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                           ),
@@ -238,7 +238,7 @@ class _AuthPageState extends State<AuthPage> {
                                 }),
                         child: Text(
                           _isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться',
-                          style: const TextStyle(color: GlassTheme.textPrimary),
+                          style: TextStyle(color: context.fm.textPrimary),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -251,7 +251,7 @@ class _AuthPageState extends State<AuthPage> {
                                 });
                               },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: GlassTheme.textPrimary,
+                          foregroundColor: context.fm.textPrimary,
                           side: BorderSide(color: Colors.white.withOpacity(0.5)),
                         ),
                         child: const Text('Продолжить как гость'),
@@ -279,9 +279,9 @@ class _AuthPageState extends State<AuthPage> {
       selected: selected,
       onSelected: onSelected,
       backgroundColor: Colors.white.withValues(alpha: 0.08),
-      selectedColor: GlassTheme.gradientTop.withValues(alpha: 0.55),
+      selectedColor: context.fm.gradientHeaderTop.withValues(alpha: 0.55),
       checkmarkColor: Colors.white,
-      labelStyle: const TextStyle(color: GlassTheme.textPrimary, fontSize: 13),
+      labelStyle: TextStyle(color: context.fm.textPrimary, fontSize: 13),
       side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
     );
   }
@@ -294,14 +294,14 @@ class _AuthPageState extends State<AuthPage> {
           children: [
             Icon(
               Icons.health_and_safety_outlined,
-              color: GlassTheme.glowCyan.withValues(alpha: 0.95),
+              color: context.fm.glowCyan.withValues(alpha: 0.95),
               size: 22,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Пищевые аллергии',
-                style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                style: context.fm.titleStyle.copyWith(fontSize: 16),
               ),
             ),
           ],
@@ -309,7 +309,7 @@ class _AuthPageState extends State<AuthPage> {
         const SizedBox(height: 6),
         Text(
           'Укажите, если есть — это попадёт в профиль и в советы ИИ. Можно пропустить.',
-          style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+          style: context.fm.bodyStyle.copyWith(fontSize: 12),
         ),
         const SizedBox(height: 12),
         _authFilterChip(
@@ -358,12 +358,12 @@ class _AuthPageState extends State<AuthPage> {
               setState(() => _noFoodAllergies = false);
             }
           },
-          style: const TextStyle(color: GlassTheme.textPrimary, fontSize: 14),
+          style: TextStyle(color: context.fm.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             labelText: 'Другое (через запятую)',
             hintText: 'Например: клубника, мёд',
-            labelStyle: const TextStyle(color: GlassTheme.textSecondary),
-            hintStyle: TextStyle(color: GlassTheme.textSecondary.withValues(alpha: 0.7)),
+            labelStyle: TextStyle(color: context.fm.textSecondary),
+            hintStyle: TextStyle(color: context.fm.textSecondary.withValues(alpha: 0.7)),
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.1),
             border: OutlineInputBorder(
@@ -376,7 +376,7 @@ class _AuthPageState extends State<AuthPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),
-              borderSide: const BorderSide(color: GlassTheme.glowCyan, width: 1.5),
+              borderSide: BorderSide(color: context.fm.glowCyan, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           ),
@@ -393,14 +393,14 @@ class _AuthPageState extends State<AuthPage> {
           children: [
             Icon(
               Icons.medical_information_outlined,
-              color: GlassTheme.glowCyan.withValues(alpha: 0.95),
+              color: context.fm.glowCyan.withValues(alpha: 0.95),
               size: 22,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Противопоказания к нагрузкам',
-                style: GlassTheme.titleStyle.copyWith(fontSize: 16),
+                style: context.fm.titleStyle.copyWith(fontSize: 16),
               ),
             ),
           ],
@@ -408,7 +408,7 @@ class _AuthPageState extends State<AuthPage> {
         const SizedBox(height: 6),
         Text(
           'Отметьте, если есть ограничения по здоровью. ИИ и рекомендации будут осторожнее. Можно пропустить.',
-          style: GlassTheme.bodyStyle.copyWith(fontSize: 12),
+          style: context.fm.bodyStyle.copyWith(fontSize: 12),
         ),
         const SizedBox(height: 12),
         _authFilterChip(
@@ -458,12 +458,12 @@ class _AuthPageState extends State<AuthPage> {
               setState(() => _noContraindications = false);
             }
           },
-          style: const TextStyle(color: GlassTheme.textPrimary, fontSize: 14),
+          style: TextStyle(color: context.fm.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             labelText: 'Другое (через запятую)',
             hintText: 'Например: грыжа поясницы',
-            labelStyle: const TextStyle(color: GlassTheme.textSecondary),
-            hintStyle: TextStyle(color: GlassTheme.textSecondary.withValues(alpha: 0.7)),
+            labelStyle: TextStyle(color: context.fm.textSecondary),
+            hintStyle: TextStyle(color: context.fm.textSecondary.withValues(alpha: 0.7)),
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.1),
             border: OutlineInputBorder(
@@ -476,7 +476,7 @@ class _AuthPageState extends State<AuthPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),
-              borderSide: const BorderSide(color: GlassTheme.glowCyan, width: 1.5),
+              borderSide: BorderSide(color: context.fm.glowCyan, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           ),
@@ -500,15 +500,15 @@ class _AuthPageState extends State<AuthPage> {
       keyboardType: keyboardType,
       autocorrect: false,
       obscureText: obscureText,
-      style: const TextStyle(color: GlassTheme.textPrimary),
+      style: TextStyle(color: context.fm.textPrimary),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: const TextStyle(color: GlassTheme.textSecondary),
-        hintStyle: const TextStyle(color: GlassTheme.textSecondary),
+        labelStyle: TextStyle(color: context.fm.textSecondary),
+        hintStyle: TextStyle(color: context.fm.textSecondary),
         filled: true,
         fillColor: Colors.white.withOpacity(0.1),
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: GlassTheme.textSecondary, size: 22) : null,
+        prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: context.fm.textSecondary, size: 22) : null,
         suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
@@ -520,7 +520,7 @@ class _AuthPageState extends State<AuthPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
-          borderSide: const BorderSide(color: GlassTheme.glowCyan, width: 1.5),
+          borderSide: BorderSide(color: context.fm.glowCyan, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
@@ -536,11 +536,11 @@ class _AuthPageState extends State<AuthPage> {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        gradient: GlassTheme.primaryButtonGradient,
+        gradient: context.fm.primaryButtonGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: GlassTheme.glowCyan.withOpacity(0.3),
+            color: context.fm.glowCyan.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

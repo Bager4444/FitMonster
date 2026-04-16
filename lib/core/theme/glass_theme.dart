@@ -1,55 +1,57 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:fitmonster/core/theme/fit_monster_colors.dart';
 
-/// Deep Blue Glassmorphism: единая тема и переиспользуемые виджеты для всего приложения.
+export 'fit_monster_colors.dart';
+
+/// Константы обводки; цвета и градиенты — из [FitMonsterColors] через `context.fm`.
 class GlassTheme {
   GlassTheme._();
 
-  // ——— Цвета (строго по ТЗ) ———
-  static const Color gradientTop = Color(0xFF2979FF);
-  static const Color gradientBottom = Color(0xFF0D1B2A);
-  static const Color glowCyan = Color(0xFF00E5FF);
+  static const double outlineStrokeWidth = 1.0;
 
-  static const LinearGradient scaffoldGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [gradientTop, gradientBottom],
-  );
-
-  static const LinearGradient primaryButtonGradient = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [Color(0xFF00E5FF), Color(0xFF2979FF)],
-  );
-
-  // Типографика
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Colors.white70;
-
-  static TextStyle get titleStyle => const TextStyle(
-        fontWeight: FontWeight.bold,
-        color: textPrimary,
-        shadows: [
-          Shadow(color: Colors.black26, offset: Offset(0, 1), blurRadius: 2),
-        ],
-      );
-
-  static TextStyle get bodyStyle => const TextStyle(
-        color: textSecondary,
-        shadows: [
-          Shadow(color: Colors.black26, offset: Offset(0, 1), blurRadius: 1),
-        ],
-      );
-
-  /// Фон для всего приложения: градиент под статус/навбар.
-  static Widget buildScaffoldBackground() => Container(
-        decoration: const BoxDecoration(
-          gradient: scaffoldGradient,
+  static Widget buildScaffoldBackground(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          gradient: context.fm.scaffoldGradient,
         ),
       );
+
+  /// Карточка: градиентная рамка + непрозрачный фон.
+  static Widget framedOpaque({
+    required BuildContext context,
+    required Widget child,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(14),
+    double borderRadius = 24,
+    double frameWidth = 2,
+  }) {
+    final fm = context.fm;
+    final innerR = (borderRadius - frameWidth).clamp(1.0, borderRadius);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: Container(
+        padding: EdgeInsets.all(frameWidth),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          gradient: fm.frameGradient,
+        ),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: fm.surfaceCard,
+            borderRadius: BorderRadius.circular(innerR),
+            border: Border.all(
+              color: fm.outlineMuted,
+              width: outlineStrokeWidth,
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
 }
 
-/// Переиспользуемый стеклянный контейнер с размытием и обводкой.
+/// Стеклянный блок: градиентная обводка, непрозрачный фон.
 class GlassContainer extends StatelessWidget {
   const GlassContainer({
     super.key,
@@ -57,7 +59,8 @@ class GlassContainer extends StatelessWidget {
     this.padding,
     this.borderRadius = 24,
     this.onTap,
-    this.blurSigma = 20,
+    this.blurSigma = 0,
+    this.borderWidth = 2.75,
   });
 
   final Widget child;
@@ -65,27 +68,48 @@ class GlassContainer extends StatelessWidget {
   final double borderRadius;
   final VoidCallback? onTap;
   final double blurSigma;
+  final double borderWidth;
 
   @override
   Widget build(BuildContext context) {
-    final content = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: Container(
-          padding: padding ?? const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1.5,
-            ),
-          ),
-          child: child,
+    final fm = context.fm;
+    final innerRadius = (borderRadius - borderWidth).clamp(0.0, borderRadius);
+
+    final inner = Container(
+      padding: padding ?? const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: fm.surfaceCard,
+        borderRadius: BorderRadius.circular(innerRadius),
+        border: Border.all(
+          color: fm.outlineMuted,
+          width: GlassTheme.outlineStrokeWidth,
         ),
       ),
+      child: child,
     );
+
+    final clippedInner = ClipRRect(
+      borderRadius: BorderRadius.circular(innerRadius),
+      child: blurSigma > 0.5
+          ? BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+              child: inner,
+            )
+          : inner,
+    );
+
+    final content = ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: Container(
+        padding: EdgeInsets.all(borderWidth),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          gradient: fm.frameGradient,
+        ),
+        child: clippedInner,
+      ),
+    );
+
     if (onTap != null) {
       return Material(
         color: Colors.transparent,

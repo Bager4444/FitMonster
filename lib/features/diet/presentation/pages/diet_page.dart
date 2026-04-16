@@ -100,15 +100,21 @@ class _DietPageState extends State<DietPage> {
             child: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
-              title: const Text('Диета', style: TextStyle(color: GlassTheme.textPrimary, fontWeight: FontWeight.bold)),
+              title: Text(
+                'Диета',
+                style: TextStyle(
+                  color: context.fm.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               automaticallyImplyLeading: false,
               toolbarHeight: kToolbarHeight,
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(40),
                 child: TabBar(
-                  labelColor: GlassTheme.glowCyan,
-                  unselectedLabelColor: GlassTheme.textSecondary,
-                  indicatorColor: GlassTheme.glowCyan,
+                  labelColor: context.fm.glowCyan,
+                  unselectedLabelColor: context.fm.textSecondary,
+                  indicatorColor: context.fm.glowCyan,
                   tabs: const [
                     Tab(icon: Icon(Icons.dashboard, size: 20), text: 'Статистика'),
                     Tab(icon: Icon(Icons.restaurant_menu, size: 20), text: 'Дневник'),
@@ -145,7 +151,7 @@ class _DietPageState extends State<DietPage> {
             alignment: Alignment.centerLeft,
             child: Text(
               'Диета',
-              style: GlassTheme.titleStyle.copyWith(fontSize: 24),
+              style: context.fm.titleStyle.copyWith(fontSize: 24),
             ),
           ),
           Expanded(
@@ -154,7 +160,7 @@ class _DietPageState extends State<DietPage> {
               title: 'Журнал питания пуст',
               message: 'Сначала настройте профиль для расчета калорий',
               actionText: 'Настроить профиль',
-              actionButtonColor: GlassTheme.glowCyan,
+              actionButtonColor: context.fm.glowCyan,
               actionButtonTextColor: Colors.black,
               onAction: () async {
                 await Navigator.push(

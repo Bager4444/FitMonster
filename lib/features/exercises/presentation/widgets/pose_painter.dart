@@ -16,80 +16,76 @@ class PosePainter extends CustomPainter {
     this.mirror = false,
   });
 
-  // Соединения скелета для ML Kit Pose Detection
-  static const List<List<int>> _connections = [
-    // Торс (используем правильные индексы ML Kit)
-    [5, 6],   // Левое плечо - правое плечо
-    [5, 11],  // Левое плечо - левое бедро  
-    [6, 12],  // Правое плечо - правое бедро
-    [11, 12], // Левое бедро - правое бедро
-    
-    // Левая рука
-    [5, 7],   // Левое плечо - левый локоть
-    [7, 9],   // Левый локоть - левое запястье
-    
-    // Правая рука  
-    [6, 8],   // Правое плечо - правый локоть
-    [8, 10],  // Правый локоть - правое запястье
-    
-    // Левая нога
-    [11, 13], // Левое бедро - левое колено
-    [13, 15], // Левое колено - левая лодыжка
-    
-    // Правая нога
-    [12, 14], // Правое бедро - правое колено  
-    [14, 16], // Правое колено - правая лодыжка
-  ];
-
   @override
   void paint(Canvas canvas, Size size) {
-    // Настройка кистей (как в Camerawork)
+    // Контуры: сначала тёмная «обводка», поверх яркая линия (лучше видно на тёмном UI).
+    final lineOutline = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = const Color(0xD9000000);
+
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..color = Colors.white.withValues(alpha: 0.8); // Белые полупрозрачные линии
+      ..strokeWidth = 4.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = Colors.white.withValues(alpha: 0.95);
+
+    final jointOutline = Paint()
+      ..style = PaintingStyle.fill
+      ..color = const Color(0xE6000000);
 
     final pointPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.blue; // Синие точки
+      ..color = const Color(0xFF60A5FA);
 
     for (final pose in poses) {
       final landmarks = pose.landmarks;
       
       // Рисуем соединения (линии скелета) используя типы landmarks
-      _drawConnection(canvas, landmarks, PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, linePaint, size);
-      _drawConnection(canvas, landmarks, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip, linePaint, size);
-      _drawConnection(canvas, landmarks, PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip, linePaint, size);
-      _drawConnection(canvas, landmarks, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder, lineOutline, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip, lineOutline, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip, lineOutline, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.leftHip, PoseLandmarkType.rightHip, lineOutline, linePaint, size);
       
       // Левая рука
-      _drawConnection(canvas, landmarks, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, linePaint, size);
-      _drawConnection(canvas, landmarks, PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, lineOutline, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist, lineOutline, linePaint, size);
       
       // Правая рука
-      _drawConnection(canvas, landmarks, PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow, linePaint, size);
-      _drawConnection(canvas, landmarks, PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow, lineOutline, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist, lineOutline, linePaint, size);
       
       // Левая нога
-      _drawConnection(canvas, landmarks, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, linePaint, size);
-      _drawConnection(canvas, landmarks, PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, lineOutline, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle, lineOutline, linePaint, size);
       
       // Правая нога
-      _drawConnection(canvas, landmarks, PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee, linePaint, size);
-      _drawConnection(canvas, landmarks, PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee, lineOutline, linePaint, size);
+      _drawConnection(canvas, landmarks, PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle, lineOutline, linePaint, size);
       
-      // Рисуем точки суставов поверх линий
+      // Суставы: кольцо-контур + заливка
       for (final landmark in landmarks.values) {
         if (landmark.likelihood > 0.5) {
           final point = _translatePoint(landmark.x, landmark.y, size);
-          canvas.drawCircle(point, 8, pointPaint);
+          canvas.drawCircle(point, 12, jointOutline);
+          canvas.drawCircle(point, 9, pointPaint);
         }
       }
     }
   }
 
-  void _drawConnection(Canvas canvas, Map<PoseLandmarkType, PoseLandmark> landmarks, 
-                      PoseLandmarkType start, PoseLandmarkType end, Paint paint, Size size) {
+  void _drawConnection(
+    Canvas canvas,
+    Map<PoseLandmarkType, PoseLandmark> landmarks,
+    PoseLandmarkType start,
+    PoseLandmarkType end,
+    Paint outlinePaint,
+    Paint foregroundPaint,
+    Size size,
+  ) {
     final startLandmark = landmarks[start];
     final endLandmark = landmarks[end];
     
@@ -98,7 +94,8 @@ class PosePainter extends CustomPainter {
       final startPoint = _translatePoint(startLandmark.x, startLandmark.y, size);
       final endPoint = _translatePoint(endLandmark.x, endLandmark.y, size);
       
-      canvas.drawLine(startPoint, endPoint, paint);
+      canvas.drawLine(startPoint, endPoint, outlinePaint);
+      canvas.drawLine(startPoint, endPoint, foregroundPaint);
     }
   }
 

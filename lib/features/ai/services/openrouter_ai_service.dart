@@ -56,14 +56,34 @@ class OpenRouterAiService {
       _firebaseReady() &&
       FirebaseAuth.instance.currentUser != null;
 
+  /// Убирает типичный мусор из вставки (переносы, BOM, невидимые символы, кавычки).
+  static String sanitizeApiKey(String? raw) {
+    if (raw == null) return '';
+    var s = raw.trim();
+    if (s.isEmpty) return '';
+    s = s.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
+    if (s.startsWith('\ufeff')) s = s.substring(1).trim();
+    s = s.replaceAll(RegExp(r'[\r\n]+'), '');
+    s = s.replaceAll(RegExp(r'\s+'), '');
+    s = s.replaceAll('"', '').replaceAll("'", '');
+    s = s.replaceAll('“', '').replaceAll('”', '').replaceAll('‘', '').replaceAll('’', '');
+    return s.trim();
+  }
+
   /// Ключ: файл [kOpenRouterUserApiKey], затем SharedPreferences, затем `--dart-define=OPENROUTER_API_KEY=...`.
   Future<String> resolveApiKey() async {
-    final fromFile = kOpenRouterUserApiKey.trim();
+    final fromFile = sanitizeApiKey(kOpenRouterUserApiKey);
     if (fromFile.isNotEmpty) return fromFile;
     final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getString(_prefsApiKey)?.trim();
-    if (stored != null && stored.isNotEmpty) return stored;
-    return _apiKeyFromCompile.trim();
+    final stored = sanitizeApiKey(prefs.getString(_prefsApiKey));
+    if (stored.isNotEmpty) return stored;
+    return sanitizeApiKey(_apiKeyFromCompile);
+  }
+
+  /// Только ключ из меню (для предзаполнения диалога). Из файла Dart сюда не попадает.
+  Future<String> prefsStoredKeyForDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    return sanitizeApiKey(prefs.getString(_prefsApiKey));
   }
 
   Future<bool> isApiKeyConfigured() async {
@@ -74,7 +94,7 @@ class OpenRouterAiService {
 
   Future<bool> saveApiKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    final t = key.trim();
+    final t = sanitizeApiKey(key);
     if (t.isEmpty) {
       await prefs.remove(_prefsApiKey);
       await prefs.reload();
@@ -386,12 +406,14 @@ class OpenRouterAiService {
     return AiMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content:
-          '⚙️ Нет доступа к OpenRouter.\n\n'
+          '⚙️ Нет доступа к OpenRouter (ключ не прочитан).\n\n'
           '$cloudHint'
-          'Свой ключ: файл lib/core/config/openrouter_user_key.dart '
-          '(kOpenRouterUserApiKey) — https://openrouter.ai/keys\n\n'
-          'Или меню ⋮ → «Ключ API OpenRouter», '
-          'либо сборка: --dart-define=OPENROUTER_API_KEY=...\n\n'
+          '• Ключ в openrouter_user_key.dart попадает в приложение только после '
+          'полной пересборки APK / cold start, не hot reload.\n'
+          '• Через меню ⋮: нажми «Сохранить» и дождись зелёного уведомления; '
+          'вставляй ключ одной строкой, без пробелов и кавычек.\n\n'
+          'Файл: lib/core/config/openrouter_user_key.dart — https://openrouter.ai/keys\n'
+          'Сборка: --dart-define=OPENROUTER_API_KEY=...\n\n'
           'Пока отвечаю офлайн по встроенной базе знаний 💪',
       isUser: false,
       timestamp: DateTime.now(),
